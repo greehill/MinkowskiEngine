@@ -12,10 +12,9 @@ The Minkowski Engine is an auto-differentiation library for sparse tensors. It s
 
 ## News
 
-- 2021-08-11 Docker installation instruction added
-- 2021-08-06 All installation errors with pytorch 1.8 and 1.9 have been resolved.
-- 2021-04-08 Due to recent errors in [pytorch 1.8 + CUDA 11](https://github.com/NVIDIA/MinkowskiEngine/issues/330), it is recommended to use [anaconda for installation](#anaconda).
-- 2020-12-24 v0.5 is now available! The new version provides CUDA accelerations for all coordinate management functions.
+- 2026-03-08 Compatibility refresh: Python `3.10` to `3.14`, PyTorch `2.5` to `2.10`, `uv`-first builds, and modern PEP 517 packaging
+- 2026-03-08 CPU validation now targets Linux and macOS, with representative Linux CUDA CI on official PyTorch wheel channels
+- 2026-03-08 Point-cloud fixtures are now tracked locally instead of being downloaded during test import
 
 ## Example Networks
 
@@ -56,150 +55,126 @@ We visualized a sparse tensor network operation on a sparse tensor, convolution,
 - Highly-optimized GPU kernels
 
 
+## Compatibility
+
+Validated source-build targets in this repository:
+
+- Python `3.10` to `3.14`
+- PyTorch `2.5` to `2.10`
+- Linux `x86_64` CUDA builds against official PyTorch wheel channels `cu124`, `cu126`, `cu128`, and `cu130`
+- Linux and macOS CPU-only builds
+
+Current limits:
+
+- Python `3.14` is validated with PyTorch `2.9` and `2.10`
+- Windows is out of scope in this pass
+- CUDA `13.1` is not claimed yet. Wait for an official PyTorch `cu131` wheel channel before treating it as supported
+
 ## Requirements
 
-- Ubuntu >= 14.04
-- CUDA >= 10.1.243 and **the same CUDA version used for pytorch** (e.g. if you use conda cudatoolkit=11.1, use CUDA=11.1 for MinkowskiEngine compilation)
-- pytorch >= 1.7 To specify CUDA version, please use conda for installation. You must match the CUDA version pytorch uses and CUDA version used for Minkowski Engine installation. `conda install -y -c nvidia -c pytorch pytorch=1.8.1 cudatoolkit=10.2`)
-- python >= 3.6
-- ninja (for installation)
-- GCC >= 7.4.0
-
+- A matching PyTorch install must exist before building MinkowskiEngine
+- `ninja`
+- A BLAS implementation, typically `openblas`
+- Linux: a C++17 compiler toolchain and the CUDA toolkit when building with GPU support
+- macOS: CPU-only builds, with Homebrew `openblas` and `libomp`
 
 ## Installation
 
-You can install the Minkowski Engine with `pip`, with anaconda, or on the system directly. If you experience issues installing the package, please checkout the [the installation wiki page](https://github.com/NVIDIA/MinkowskiEngine/wiki/Installation).
-If you cannot find a relevant problem, please report the issue on [the github issue page](https://github.com/NVIDIA/MinkowskiEngine/issues).
+`uv` is the supported install and test workflow for this repository. Install PyTorch first, then build MinkowskiEngine from source with `uv pip install --no-build-isolation -v .`.
 
-- [PIP](https://github.com/NVIDIA/MinkowskiEngine#pip) installation
-- [Conda](https://github.com/NVIDIA/MinkowskiEngine#anaconda) installation
-- [Python](https://github.com/NVIDIA/MinkowskiEngine#system-python) installation
-- [Docker](https://github.com/NVIDIA/MinkowskiEngine#docker) installation
+### CPU-only build with `uv`
 
+Linux:
 
-### Pip
-
-The MinkowskiEngine is distributed via [PyPI MinkowskiEngine][pypi-url] which can be installed simply with `pip`.
-First, install pytorch following the [instruction](https://pytorch.org). Next, install `openblas`.
-
-```
-sudo apt install build-essential python3-dev libopenblas-dev
-pip install torch ninja
-pip install -U MinkowskiEngine --install-option="--blas=openblas" -v --no-deps
-
-# For pip installation from the latest source
-# pip install -U git+https://github.com/NVIDIA/MinkowskiEngine --no-deps
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libopenblas-dev
 ```
 
-If you want to specify arguments for the setup script, please refer to the following command.
+macOS:
 
-```
-# Uncomment some options if things don't work
-# export CXX=c++; # set this if you want to use a different C++ compiler
-# export CUDA_HOME=/usr/local/cuda-11.1; # or select the correct cuda version on your system.
-pip install -U git+https://github.com/NVIDIA/MinkowskiEngine -v --no-deps \
-#                           \ # uncomment the following line if you want to force cuda installation
-#                           --install-option="--force_cuda" \
-#                           \ # uncomment the following line if you want to force no cuda installation. force_cuda supercedes cpu_only
-#                           --install-option="--cpu_only" \
-#                           \ # uncomment the following line to override to openblas, atlas, mkl, blas
-#                           --install-option="--blas=openblas" \
+```bash
+brew install openblas libomp
 ```
 
-### Anaconda
+Shared steps:
 
-MinkowskiEngine supports both CUDA 10.2 and cuda 11.1, which work for most of latest pytorch versions.
-#### CUDA 10.2
-
-We recommend `python>=3.6` for installation.
-First, follow [the anaconda documentation](https://docs.anaconda.com/anaconda/install/) to install anaconda on your computer.
-
-```
-sudo apt install g++-7  # For CUDA 10.2, must use GCC < 8
-# Make sure `g++-7 --version` is at least 7.4.0
-conda create -n py3-mink python=3.8
-conda activate py3-mink
-
-conda install openblas-devel -c anaconda
-conda install pytorch=1.9.0 torchvision cudatoolkit=10.2 -c pytorch -c nvidia
-
-# Install MinkowskiEngine
-export CXX=g++-7
-# Uncomment the following line to specify the cuda home. Make sure `$CUDA_HOME/nvcc --version` is 10.2
-# export CUDA_HOME=/usr/local/cuda-10.2
-pip install -U git+https://github.com/NVIDIA/MinkowskiEngine -v --no-deps --install-option="--blas_include_dirs=${CONDA_PREFIX}/include" --install-option="--blas=openblas"
-
-# Or if you want local MinkowskiEngine
+```bash
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
-export CXX=g++-7
-python setup.py install --blas_include_dirs=${CONDA_PREFIX}/include --blas=openblas
+
+uv venv .venv --python 3.12
+source .venv/bin/activate
+
+uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "torch==2.10.0" \
+  --index-url https://download.pytorch.org/whl/cpu
+uv pip install --python .venv/bin/python numpy ninja
+
+MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
+  uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
 
-#### CUDA 11.X
+### CUDA build with `uv`
 
-We recommend `python>=3.6` for installation.
-First, follow [the anaconda documentation](https://docs.anaconda.com/anaconda/install/) to install anaconda on your computer.
+Use Linux `x86_64`, install a CUDA toolkit that matches the PyTorch wheel channel you selected, and point `CUDA_HOME` at that toolkit.
 
-```
-conda create -n py3-mink python=3.8
-conda activate py3-mink
+Example for PyTorch `2.10.0` with CUDA `13.0` wheels:
 
-conda install openblas-devel -c anaconda
-conda install pytorch=1.9.0 torchvision cudatoolkit=11.1 -c pytorch -c nvidia
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libopenblas-dev
 
-# Install MinkowskiEngine
-
-# Uncomment the following line to specify the cuda home. Make sure `$CUDA_HOME/nvcc --version` is 11.X
-# export CUDA_HOME=/usr/local/cuda-11.1
-pip install -U git+https://github.com/NVIDIA/MinkowskiEngine -v --no-deps --install-option="--blas_include_dirs=${CONDA_PREFIX}/include" --install-option="--blas=openblas"
-
-# Or if you want local MinkowskiEngine
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
-python setup.py install --blas_include_dirs=${CONDA_PREFIX}/include --blas=openblas
+
+uv venv .venv --python 3.13
+source .venv/bin/activate
+
+uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "torch==2.10.0" \
+  --index-url https://download.pytorch.org/whl/cu130
+uv pip install --python .venv/bin/python numpy ninja
+
+export CUDA_HOME=/usr/local/cuda-13.0
+MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
+  uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
 
-### System Python
+PyTorch release notes determine which wheel channel is valid for a given release. The repository CI validates representative official combinations:
 
-Like the anaconda installation, make sure that you install pytorch with the same CUDA version that `nvcc` uses.
+- `torch 2.5` on `cu124`
+- `torch 2.6` on `cu126`
+- `torch 2.7` on `cu128`
+- `torch 2.9` on `cu130`
+- `torch 2.10` on `cu130`
 
-```
-# install system requirements
-sudo apt install build-essential python3-dev libopenblas-dev
+The GPU workflow uses self-hosted NVIDIA runners. On push and pull request runs it is
+opt-in: set repository variable `MINKOWSKI_GPU_CI_ENABLED=true` and define
+`MINKOWSKI_GPU_RUNNER_LABELS` as a comma-separated label list such as
+`cuda-12-8,cuda-13-0`. Without that configuration, GPU CI skips cleanly instead of
+remaining queued. Manual `workflow_dispatch` runs can pass `runner_labels` directly.
 
-# Skip if you already have pip installed on your python3
-curl https://bootstrap.pypa.io/get-pip.py | python3
+### Build environment variables
 
-# Get pip and install python requirements
-python3 -m pip install torch numpy ninja
+The build now uses environment variables instead of `setup.py install` flags:
 
-git clone https://github.com/NVIDIA/MinkowskiEngine.git
+- `MINKOWSKI_CPU_ONLY=1` forces a CPU-only build
+- `MINKOWSKI_FORCE_CUDA=1` requires a CUDA build and fails if torch or `CUDA_HOME` are not CUDA-capable
+- `MINKOWSKI_BLAS=openblas|mkl|atlas|flexiblas|blas` chooses the BLAS backend
+- `MINKOWSKI_BLAS_INCLUDE_DIRS=/path/one,/path/two` overrides BLAS header discovery
+- `MINKOWSKI_BLAS_LIBRARY_DIRS=/path/one,/path/two` overrides BLAS library discovery
+- Existing toolchain variables such as `CUDA_HOME`, `CXX`, `MAX_JOBS`, `USE_NINJA`, and `TORCH_CUDA_ARCH_LIST` are still honored
+- On macOS, the runtime defaults `OMP_NUM_THREADS=1` unless you override it explicitly
 
-cd MinkowskiEngine
+### API compatibility notes
 
-python setup.py install
-# To specify blas, CXX, CUDA_HOME and force CUDA installation, use the following command
-# export CXX=c++; export CUDA_HOME=/usr/local/cuda-11.1; python setup.py install --blas=openblas --force_cuda
-```
+- `MinkowskiConvolutionTranspose` and `MinkowskiGenerativeConvolutionTranspose` still accept `generate_new_coords`, but it is now a deprecated alias for `expand_coordinates`
+- Point-cloud tests use the tracked fixture at `tests/data/1.ply`; they no longer download data at import time
 
-### Docker
+### C++ test extensions
 
-```
-git clone https://github.com/NVIDIA/MinkowskiEngine
-cd MinkowskiEngine
-docker build -t MinkowskiEngine docker
-```
-
-Once the docker is built, check it loads MinkowskiEngine correctly.
-
-```
-docker run MinkowskiEngine python3 -c "import MinkowskiEngine; print(MinkowskiEngine.__version__)"
-```
-
-## CPU only build and BLAS configuration (MKL)
-
-The Minkowski Engine supports CPU only build on other platforms that do not have NVidia GPUs. Please refer to [quick start](https://nvidia.github.io/MinkowskiEngine/quick_start.html) for more details.
+The C++ backend test build also uses the shared build helper. See `tests/cpp/README.md` for the updated `uv` workflow.
 
 
 ## Quick Start
@@ -287,12 +262,9 @@ page](https://github.com/NVIDIA/MinkowskiEngine/issues).
 In some cases, you need to explicitly specify which compute capability your GPU uses. The default list might not contain your architecture.
 
 ```bash
-export TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"; python setup.py install --force_cuda
+export TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+MINKOWSKI_FORCE_CUDA=1 uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
-
-### Unhandled Out-Of-Memory thrust::system exception
-
-There is [a known issue](https://github.com/NVIDIA/thrust/issues/1448) in thrust with CUDA 10 that leads to an unhandled thrust exception. Please refer to the [issue](https://github.com/NVIDIA/MinkowskiEngine/issues/357) for detail.
 
 ### Too much GPU memory usage or Frequent Out of Memory
 
@@ -307,15 +279,9 @@ Specifically, pytorch caches chunks of memory spaces to speed up allocation used
 
 **To prevent this, you must clear the cache at regular interval with `torch.cuda.empty_cache()`.**
 
-### CUDA 11.1 Installation
+### Matching CUDA and PyTorch
 
-```
-wget https://developer.download.nvidia.com/compute/cuda/11.1.1/local_installers/cuda_11.1.1_455.32.00_linux.run
-sudo sh cuda_11.1.1_455.32.00_linux.run --toolkit --silent --override
-
-# Install MinkowskiEngine with CUDA 11.1
-export CUDA_HOME=/usr/local/cuda-11.1; pip install MinkowskiEngine -v --no-deps
-```
+Make sure the installed PyTorch wheel channel and the local CUDA toolkit match. For example, a `cu130` torch install should build against a CUDA `13.0` toolkit exposed through `CUDA_HOME`.
 
 ### Running the MinkowskiEngine on nodes with a large number of CPUs
 

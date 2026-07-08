@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=69", "wheel", "packaging"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MinkowskiEngine"
+version = "0.5.4"
+description = "A convolutional neural network library for sparse tensors"
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+license = "MIT"
+authors = [
+  {name = "Christopher Choy", email = "chrischoy@ai.stanford.edu"}
+]
+keywords = [
+  "pytorch",
+  "Minkowski Engine",
+  "Sparse Tensor",
+  "Convolutional Neural Networks",
+  "3D Vision",
+  "Deep Learning",
+]
+classifiers = [
+  "Environment :: Console",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Other Audience",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+  "numpy<3",
+  "torch>=2.5,<2.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/MinkowskiEngine"
+Documentation = "https://nvidia.github.io/MinkowskiEngine/"
+Repository = "https://github.com/NVIDIA/MinkowskiEngine"
+Issues = "https://github.com/NVIDIA/MinkowskiEngine/issues"
+
+[tool.setuptools]
+include-package-data = true
+py-modules = ["build_helpers"]
+
+[tool.setuptools.packages.find]
+include = ["MinkowskiEngine", "MinkowskiEngine.*"]

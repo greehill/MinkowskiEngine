@@ -21,55 +21,44 @@
 # Please cite "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
-import os
 import argparse
-import numpy as np
-from urllib.request import urlretrieve
-
-try:
-    import open3d as o3d
-except ImportError:
-    raise ImportError("Please install open3d with `pip install open3d`.")
+from pathlib import Path
 
 import torch
 import MinkowskiEngine as ME
 from MinkowskiCommon import convert_to_int_list
 import examples.minkunet as UNets
-from tests.python.common import data_loader, load_file, batched_coordinates
+from tests.python.common import (
+    DEFAULT_PLY_PATH,
+    batched_coordinates,
+    load_file as load_point_cloud,
+)
 from examples.common import Timer
 
-# Check if the weights and file exist and download
-if not os.path.isfile("weights.pth"):
-    print("Downloading weights and a room ply file...")
-    urlretrieve(
-        "http://cvgl.stanford.edu/data2/minkowskiengine/weights.pth", "weights.pth"
-    )
-    urlretrieve("http://cvgl.stanford.edu/data2/minkowskiengine/1.ply", "1.ply")
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--file_name", type=str, default="1.ply")
-parser.add_argument("--weights", type=str, default="weights.pth")
+parser.add_argument("--file_name", type=str, default=str(DEFAULT_PLY_PATH))
+parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--use_cpu", action="store_true")
 parser.add_argument("--backward", action="store_true")
 parser.add_argument("--max_batch", type=int, default=12)
 
 
 def quantize(coordinates):
-    D = coordinates.size(1) - 1
+    dimension = coordinates.size(1) - 1
     coordinate_manager = ME.CoordinateManager(
-        D=D, coordinate_map_type=ME.CoordinateMapType.CPU
+        D=dimension, coordinate_map_type=ME.CoordinateMapType.CPU
     )
-    coordinate_map_key = ME.CoordinateMapKey(convert_to_int_list(1, D), "")
-    key, (unique_map, inverse_map) = coordinate_manager.insert_and_map(
+    coordinate_map_key = ME.CoordinateMapKey(convert_to_int_list(1, dimension), "")
+    _, (unique_map, inverse_map) = coordinate_manager.insert_and_map(
         coordinates, *coordinate_map_key.get_key()
     )
     return unique_map, inverse_map
 
 
 def load_file(file_name, voxel_size):
-    pcd = o3d.io.read_point_cloud(file_name)
-    coords = torch.from_numpy(np.array(pcd.points))
-    feats = torch.from_numpy(np.array(pcd.colors)).float()
+    coords, colors, pcd = load_point_cloud(file_name)
+    coords = torch.from_numpy(coords)
+    feats = torch.from_numpy(colors).float()
 
     quantized_coords = torch.floor(coords / voxel_size).int()
     inds, inverse_inds = quantize(quantized_coords)
@@ -128,6 +117,13 @@ def test_network(coords, feats, model, batch_sizes, forward_only=True):
 
 if __name__ == "__main__":
     config = parser.parse_args()
+    if config.weights:
+        weights_path = Path(config.weights)
+        if not weights_path.is_file():
+            raise FileNotFoundError(
+                f"Missing weights file: {weights_path}. "
+                "Provide an existing checkpoint path with --weights."
+            )
     device = torch.device(
         "cuda" if (torch.cuda.is_available() and not config.use_cpu) else "cpu"
     )

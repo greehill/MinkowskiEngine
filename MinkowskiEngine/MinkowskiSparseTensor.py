@@ -316,7 +316,6 @@ class SparseTensor(Tensor):
 
         self.inverse_mapping = inverse_mapping
         if self.quantization_mode == SparseTensorQuantizationMode.UNWEIGHTED_SUM:
-            spmm = MinkowskiSPMMFunction()
             N = len(features)
             cols = torch.arange(
                 N,
@@ -325,9 +324,10 @@ class SparseTensor(Tensor):
             )
             vals = torch.ones(N, dtype=features.dtype, device=features.device)
             size = torch.Size([len(self.unique_index), len(self.inverse_mapping)])
-            features = spmm.apply(self.inverse_mapping, cols, vals, size, features)
+            features = MinkowskiSPMMFunction.apply(
+                self.inverse_mapping, cols, vals, size, features
+            )
         elif self.quantization_mode == SparseTensorQuantizationMode.UNWEIGHTED_AVERAGE:
-            spmm_avg = MinkowskiSPMMAverageFunction()
             N = len(features)
             cols = torch.arange(
                 N,
@@ -335,7 +335,9 @@ class SparseTensor(Tensor):
                 device=self.inverse_mapping.device,
             )
             size = torch.Size([len(self.unique_index), len(self.inverse_mapping)])
-            features = spmm_avg.apply(self.inverse_mapping, cols, size, features)
+            features = MinkowskiSPMMAverageFunction.apply(
+                self.inverse_mapping, cols, size, features
+            )
         elif self.quantization_mode == SparseTensorQuantizationMode.RANDOM_SUBSAMPLE:
             features = features[self.unique_index]
         else:
@@ -563,7 +565,7 @@ class SparseTensor(Tensor):
         if self.coordinate_map_key in X._splat:
             tensor_map, field_map, weights, size = X._splat[self.coordinate_map_key]
             size = torch.Size([size[1], size[0]])  # transpose
-            features = MinkowskiSPMMFunction().apply(
+            features = MinkowskiSPMMFunction.apply(
                 field_map, tensor_map, weights, size, self._F
             )
         else:
@@ -710,7 +712,7 @@ class SparseTensor(Tensor):
         assert (
             query_coordinates.device == self.device
         ), "query coordinates device ({query_coordinates.device}) does not match the sparse tensor device ({self.device})."
-        return MinkowskiInterpolationFunction().apply(
+        return MinkowskiInterpolationFunction.apply(
             self._F,
             query_coordinates,
             self.coordinate_map_key,

@@ -23,9 +23,12 @@
 # of the code.
 import torch
 import unittest
+import gc
+import weakref
 
 from MinkowskiEngine import (
     SparseTensor,
+    MinkowskiConvolution,
     MinkowskiGlobalSumPooling,
     MinkowskiBroadcastFunction,
     MinkowskiBroadcastAddition,
@@ -41,6 +44,8 @@ from tests.python.common import data_loader
 
 class TestBroadcast(unittest.TestCase):
     def test_broadcast_gpu(self):
+        if not torch.cuda.is_available():
+            return
         in_channels, D = 2, 2
         coords, feats, labels = data_loader(in_channels)
         coords, feats_glob, labels = data_loader(in_channels)
@@ -61,7 +66,7 @@ class TestBroadcast(unittest.TestCase):
         cpu_cat = broadcast_cat(input, input_glob)
 
         # Check backward
-        fn = MinkowskiBroadcastFunction()
+        fn = MinkowskiBroadcastFunction
 
         device = torch.device("cuda")
 
@@ -103,6 +108,32 @@ class TestBroadcast(unittest.TestCase):
             )
         )
 
+    def test_backward_releases_intermediate_features(self):
+        in_channels, D = 2, 2
+        coords, feats, labels = data_loader(in_channels)
+        feats = feats.double()
+        feats.requires_grad_()
+
+        conv = MinkowskiConvolution(
+            in_channels, in_channels, kernel_size=2, stride=1, bias=False, dimension=D
+        ).double()
+        pool = MinkowskiGlobalSumPooling()
+        broadcast_add = MinkowskiBroadcastAddition()
+
+        input = SparseTensor(feats, coords)
+        hidden = conv(input)
+        hidden_ref = weakref.ref(hidden.F)
+        input_glob = pool(hidden)
+        input_glob_ref = weakref.ref(input_glob.F)
+        output = broadcast_add(hidden, input_glob)
+        output.F.sum().backward()
+
+        del output, input_glob, hidden, input, feats
+        gc.collect()
+
+        self.assertIsNone(hidden_ref())
+        self.assertIsNone(input_glob_ref())
+
     def test_broadcast(self):
         in_channels, D = 2, 2
         coords, feats, labels = data_loader(in_channels)
@@ -129,7 +160,7 @@ class TestBroadcast(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiBroadcastFunction()
+        fn = MinkowskiBroadcastFunction
         self.assertTrue(
             gradcheck(
                 fn,

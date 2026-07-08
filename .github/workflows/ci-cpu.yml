@@ -1,0 +1,155 @@
+name: CPU CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+  MINKOWSKI_BLAS: openblas
+  MINKOWSKI_CPU_ONLY: "1"
+  MINKOWSKI_LEAK_TEST_ITER: "1"
+  CORE_TEST_MODULES: >-
+    tests.python.build_config
+    tests.python.convolution
+    tests.python.pool
+    tests.python.broadcast
+    tests.python.pruning
+    tests.python.union
+    tests.python.interpolation
+    tests.python.spmm
+    tests.python.norm
+    tests.python.sparse_tensor
+    tests.python.coordinate_manager
+    tests.python.quantization
+
+jobs:
+  linux:
+    name: linux py${{ matrix.python-version }} torch${{ matrix.torch-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        torch-version: ["2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libopenblas-dev
+
+      - name: Create virtual environment
+        run: uv venv .venv --python "${{ matrix.python-version }}"
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}" \
+            --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --python .venv/bin/python numpy ninja
+
+      - name: Build MinkowskiEngine
+        run: |
+          uv pip install --python .venv/bin/python --no-build-isolation -v .
+
+      - name: Run core unittest suite
+        run: |
+          uv run --no-sync --python .venv/bin/python python -m unittest $CORE_TEST_MODULES
+
+  linux-py314:
+    name: linux py3.14 torch${{ matrix.torch-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        torch-version: ["2.9.0", "2.10.0"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libopenblas-dev
+
+      - name: Create virtual environment
+        run: uv venv .venv --python 3.14
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}" \
+            --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --python .venv/bin/python numpy ninja
+
+      - name: Build MinkowskiEngine
+        run: |
+          uv pip install --python .venv/bin/python --no-build-isolation -v .
+
+      - name: Run core unittest suite
+        run: |
+          uv run --no-sync --python .venv/bin/python python -m unittest $CORE_TEST_MODULES
+
+  macos:
+    name: macos py${{ matrix.python-version }} torch${{ matrix.torch-version }}
+    runs-on: macos-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.14"
+            torch-version: "2.10.0"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install system dependencies
+        run: brew install openblas libomp
+
+      - name: Create virtual environment
+        run: uv venv .venv --python "${{ matrix.python-version }}"
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}"
+          uv pip install --python .venv/bin/python numpy ninja
+
+      - name: Build MinkowskiEngine
+        run: |
+          uv pip install --python .venv/bin/python --no-build-isolation -v .
+
+      - name: Run core unittest suite
+        run: |
+          uv run --no-sync --python .venv/bin/python python -m unittest $CORE_TEST_MODULES

@@ -23,7 +23,8 @@
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
 import math
-from collections import Sequence, namedtuple
+from collections import namedtuple
+from collections.abc import Sequence
 from functools import reduce
 import numpy as np
 from typing import Union
@@ -387,8 +388,13 @@ def save_ctx(
     out_coords_key: CoordinateMapKey,
     coordinate_manager: CoordinateManager,
 ):
-    ctx.kernel_generator = kernel_generator
+    ctx.kernel_size = kernel_generator.kernel_size
+    ctx.kernel_stride = kernel_generator.kernel_stride
+    ctx.kernel_dilation = kernel_generator.kernel_dilation
+    ctx.region_type = kernel_generator.region_type
     ctx.in_coordinate_map_key = in_coords_key
     ctx.out_coordinate_map_key = out_coords_key
-    ctx.coordinate_manager = coordinate_manager
+    ctx.coordinate_manager = (
+        coordinate_manager._manager if coordinate_manager is not None else None
+    )
     return ctx

@@ -24,6 +24,8 @@
 # of the code.
 import torch
 import unittest
+import gc
+import weakref
 
 from MinkowskiEngine import (
     SparseTensor,
@@ -68,7 +70,7 @@ class TestLocalMaxPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -94,7 +96,7 @@ class TestLocalMaxPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -122,7 +124,7 @@ class TestLocalSumPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -136,6 +138,8 @@ class TestLocalSumPooling(unittest.TestCase):
                 ),
             )
         )
+        if not torch.cuda.is_available():
+            return
         input = SparseTensor(feats, coords, device=0)
         output = pool(input)
         print(output)
@@ -164,7 +168,7 @@ class TestLocalSumPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -178,6 +182,8 @@ class TestLocalSumPooling(unittest.TestCase):
                 ),
             )
         )
+        if not torch.cuda.is_available():
+            return
         input = SparseTensor(feats, coords, device=0)
         output = pool(input)
         print(output)
@@ -218,7 +224,7 @@ class TestLocalAvgPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -244,7 +250,7 @@ class TestLocalAvgPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingFunction()
+        fn = MinkowskiLocalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -276,7 +282,7 @@ class TestPoolingTranspose(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiLocalPoolingTransposeFunction()
+        fn = MinkowskiLocalPoolingTransposeFunction
 
         self.assertTrue(
             gradcheck(
@@ -309,7 +315,7 @@ class TestPoolingTranspose(unittest.TestCase):
         output = unpool(input)
         print(output)
         # Check backward
-        fn = MinkowskiLocalPoolingTransposeFunction()
+        fn = MinkowskiLocalPoolingTransposeFunction
 
         self.assertTrue(
             gradcheck(
@@ -371,7 +377,7 @@ class TestGlobalAvgPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -406,7 +412,7 @@ class TestGlobalAvgPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -431,7 +437,7 @@ class TestGlobalAvgPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -490,7 +496,7 @@ class TestGlobalMaxPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -515,7 +521,7 @@ class TestGlobalMaxPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -540,7 +546,7 @@ class TestGlobalMaxPooling(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiGlobalPoolingFunction()
+        fn = MinkowskiGlobalPoolingFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -574,3 +580,45 @@ class TestGlobalMaxPooling(unittest.TestCase):
                 ),
             )
         )
+
+
+class TestAutogradRelease(unittest.TestCase):
+    def test_local_pooling_backward_releases_intermediate_features(self):
+        in_channels, D = 2, 2
+        coords, feats, labels = data_loader(in_channels)
+        feats = feats.double()
+        feats.requires_grad_()
+
+        pool = MinkowskiAvgPooling(kernel_size=2, stride=1, dimension=D)
+        input = SparseTensor(feats, coordinates=coords)
+        hidden = pool(input)
+        hidden_ref = weakref.ref(hidden.F)
+        output = pool(hidden)
+        output.F.sum().backward()
+
+        del output, hidden, input, feats
+        gc.collect()
+
+        self.assertIsNone(hidden_ref())
+
+    def test_global_pooling_backward_releases_intermediate_features(self):
+        in_channels, D = 2, 2
+        coords, feats, labels = data_loader(in_channels)
+        feats = feats.double()
+        feats.requires_grad_()
+
+        conv = MinkowskiConvolution(
+            in_channels, in_channels, kernel_size=2, stride=1, bias=False, dimension=D
+        ).double()
+        pool = MinkowskiGlobalAvgPooling()
+
+        input = SparseTensor(feats, coordinates=coords)
+        hidden = conv(input)
+        hidden_ref = weakref.ref(hidden.F)
+        output = pool(hidden)
+        output.F.sum().backward()
+
+        del output, hidden, input, feats
+        gc.collect()
+
+        self.assertIsNone(hidden_ref())

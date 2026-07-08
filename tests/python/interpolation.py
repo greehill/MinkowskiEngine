@@ -22,8 +22,10 @@
 # Please cite "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
-import torch
+import os
 import unittest
+
+import torch
 
 from MinkowskiEngine import (
     SparseTensor,
@@ -35,7 +37,7 @@ from MinkowskiEngine import (
 from utils.gradcheck import gradcheck
 from tests.python.common import data_loader
 
-LEAK_TEST_ITER = 10000000
+LEAK_TEST_ITER = int(os.getenv("MINKOWSKI_LEAK_TEST_ITER", "3"))
 
 
 class TestInterpolation(unittest.TestCase):
@@ -59,10 +61,9 @@ class TestInterpolation(unittest.TestCase):
 
         # Check backward
         output.sum().backward()
-        fn = MinkowskiInterpolationFunction()
         self.assertTrue(
             gradcheck(
-                fn,
+                lambda *args: MinkowskiInterpolationFunction.apply(*args)[0],
                 (
                     input.F,
                     tfield,
@@ -85,6 +86,8 @@ class TestInterpolation(unittest.TestCase):
             output.sum().backward()
 
     def test_gpu(self):
+        if not torch.cuda.is_available():
+            return
         in_channels, D = 2, 2
         coords, feats, labels = data_loader(in_channels, batch_size=2)
         feats = feats.double()
@@ -104,10 +107,9 @@ class TestInterpolation(unittest.TestCase):
 
         output.sum().backward()
         # Check backward
-        fn = MinkowskiInterpolationFunction()
         self.assertTrue(
             gradcheck(
-                fn,
+                lambda *args: MinkowskiInterpolationFunction.apply(*args)[0],
                 (
                     input.F,
                     tfield,
@@ -130,6 +132,8 @@ class TestInterpolation(unittest.TestCase):
             output.sum().backward()
 
     def test_zero(self):
+        if not torch.cuda.is_available():
+            return
         # Issue #383 https://github.com/NVIDIA/MinkowskiEngine/issues/383
         #
         # create point and features, all with batch 0

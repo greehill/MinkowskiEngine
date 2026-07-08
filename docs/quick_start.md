@@ -1,68 +1,68 @@
 # Quick Start
 
-## Installation
+## Compatibility
 
-The MinkowskiEngine can be installed via `pip` or using conda. Currently, the installation requirements are:
+- Python `3.10` to `3.14`
+- PyTorch `2.5` to `2.10`
+- Linux `x86_64` CUDA source builds for official PyTorch channels `cu124`, `cu126`, `cu128`, and `cu130`
+- Linux and macOS CPU-only source builds
 
-- Ubuntu 14.04 or higher
-- CUDA 10.1 or higher if you want CUDA acceleration
-- pytorch 1.3 or higher
-- python 3.6 or higher
-- GCC 6 or higher
+Notes:
 
+- Python `3.14` is validated with PyTorch `2.9` and `2.10`
+- CUDA `13.1` is not supported in this repository yet
 
-## System requirements
+## Install with `uv`
 
-MinkowskiEngine requires `openblas`, `python3-dev` and `torch`, `numpy` python packages. Using anaconda is highly recommended and the following instructions will install all the requirements.
+Install PyTorch first, then build MinkowskiEngine from source with `uv`.
 
-## Installation
+CPU-only:
 
-The MinkowskiEngine is distributed via [PyPI MinkowskiEngine](https://pypi.org/project/MinkowskiEngine/) which can be installed simply with `pip`.
-
-```
-pip3 install -U MinkowskiEngine
-```
-
-To install the latest version, use `pip3 install -U git+https://github.com/NVIDIA/MinkowskiEngine`.
-
-
-## Running a segmentation network
-
-Download the MinkowskiEngine and run the example code.
-
-```
+```bash
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
-python -m examples.indoor
+
+uv venv .venv --python 3.12
+source .venv/bin/activate
+
+uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "torch==2.10.0" \
+  --index-url https://download.pytorch.org/whl/cpu
+uv pip install --python .venv/bin/python numpy ninja
+
+MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
+  uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
 
-When you run the above example, it will download pretrained weights of a
-Minkowski network and will visualize the semantic segmentation results of a 3D scene.
+CUDA on Linux `x86_64`:
 
-
-## CPU only compilation
-
-
-```
+```bash
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
-python setup.py install --cpu_only
+
+uv venv .venv --python 3.13
+source .venv/bin/activate
+
+uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "torch==2.10.0" \
+  --index-url https://download.pytorch.org/whl/cu130
+uv pip install --python .venv/bin/python numpy ninja
+
+export CUDA_HOME=/usr/local/cuda-13.0
+MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
+  uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
 
-## Other BLAS and MKL support
+## Build controls
 
-On intel CPU devices, `conda` installs `numpy` with `Intel Math Kernel Library` or `MKL`. The Minkowski Engine will automatically detect the MKL using `numpy` and use `MKL` instead of `openblas` or `atlas`.
+- `MINKOWSKI_CPU_ONLY=1` forces CPU-only builds
+- `MINKOWSKI_FORCE_CUDA=1` forces CUDA builds and requires both CUDA-enabled torch and `CUDA_HOME`
+- `MINKOWSKI_BLAS` selects the BLAS backend
+- `MINKOWSKI_BLAS_INCLUDE_DIRS` and `MINKOWSKI_BLAS_LIBRARY_DIRS` override BLAS discovery
+- `TORCH_CUDA_ARCH_LIST`, `CXX`, `MAX_JOBS`, and `USE_NINJA` are still honored
 
-In many cases, this will be done automatically. However, if the numpy is not using MKL, but you have an Intel CPU, use conda to install MKL.
+## Running an example
 
-```
-conda install -c intel mkl mkl-include
-python setup.py install --blas=mkl
-```
-
-If you want to use a specific BLAS among MKL, ATLAS, OpenBLAS, and the system BLAS, provide the blas name as follows:
-
-```
-cd MinkowskiEngine
-python setup.py install --blas=openblas
+```bash
+uv run --no-sync --python .venv/bin/python python -m examples.indoor
 ```

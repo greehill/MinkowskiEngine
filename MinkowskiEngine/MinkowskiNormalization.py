@@ -245,7 +245,12 @@ class MinkowskiInstanceNormFunction(Function):
             coords_manager._manager,
         )
 
-        ctx.saved_vars = (in_coords_key, glob_coords_key, coords_manager, gpooling_mode)
+        ctx.saved_vars = (
+            in_coords_key,
+            glob_coords_key,
+            coords_manager._manager if coords_manager is not None else None,
+            gpooling_mode,
+        )
         # For GPU tensors, must use save_for_backward.
         ctx.save_for_backward(inv_std, norm_feat)
         return norm_feat
@@ -267,7 +272,7 @@ class MinkowskiInstanceNormFunction(Function):
             gpooling_mode,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            coords_manager,
         )
 
         # 1/N \sum (dout * out)
@@ -276,7 +281,7 @@ class MinkowskiInstanceNormFunction(Function):
             gpooling_mode,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            coords_manager,
         )
 
         # out * 1/N \sum (dout * out)
@@ -286,7 +291,7 @@ class MinkowskiInstanceNormFunction(Function):
             BroadcastMode.ELEMENTWISE_MULTIPLICATION,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            coords_manager,
         )
 
         unnorm_din = broadcast_forward(
@@ -295,7 +300,7 @@ class MinkowskiInstanceNormFunction(Function):
             BroadcastMode.ELEMENTWISE_ADDITON,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            coords_manager,
         )
 
         norm_din = broadcast_forward(
@@ -304,7 +309,7 @@ class MinkowskiInstanceNormFunction(Function):
             BroadcastMode.ELEMENTWISE_MULTIPLICATION,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            coords_manager,
         )
 
         return norm_din, None, None, None, None
@@ -374,7 +379,7 @@ class MinkowskiInstanceNorm(MinkowskiModuleBase):
         self.weight = nn.Parameter(torch.ones(1, num_features))
         self.bias = nn.Parameter(torch.zeros(1, num_features))
         self.reset_parameters()
-        self.inst_norm = MinkowskiInstanceNormFunction()
+        self.inst_norm = MinkowskiInstanceNormFunction
 
     def __repr__(self):
         s = f"(nchannels={self.num_features})"

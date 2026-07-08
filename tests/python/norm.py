@@ -47,7 +47,7 @@ class TestNormalization(unittest.TestCase):
         out = norm(input)
         print(out)
 
-        fn = MinkowskiInstanceNormFunction()
+        fn = MinkowskiInstanceNormFunction
         self.assertTrue(
             gradcheck(
                 fn, (input.F, input.coordinate_map_key, None, input.coordinate_manager)
@@ -55,6 +55,8 @@ class TestNormalization(unittest.TestCase):
         )
 
     def test_inst_norm_gpu(self):
+        if not torch.cuda.is_available():
+            return
         in_channels = 2
         coords, feats, labels = data_loader(in_channels)
         feats = feats.double()
@@ -67,7 +69,7 @@ class TestNormalization(unittest.TestCase):
         out = norm(input)
         print(out)
 
-        fn = MinkowskiInstanceNormFunction()
+        fn = MinkowskiInstanceNormFunction
         self.assertTrue(
             gradcheck(
                 fn, (input.F, input.coordinate_map_key, None, input.coordinate_manager)

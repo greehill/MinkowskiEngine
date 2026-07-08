@@ -138,6 +138,8 @@ class CoordinateManagerTestCase(unittest.TestCase):
         # print(manager.stride_map(key, stride_key))
 
     def test_stride_cuda(self):
+        if not ME.is_cuda_available():
+            return
 
         coordinates = torch.IntTensor(
             [[0, 1], [0, 1], [0, 2], [0, 2], [1, 0], [1, 0], [1, 1]]

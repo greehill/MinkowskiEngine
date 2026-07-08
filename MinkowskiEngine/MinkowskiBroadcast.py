@@ -50,14 +50,13 @@ class MinkowskiBroadcastFunction(Function):
     ):
         assert isinstance(operation_type, BroadcastMode)
 
-        ctx.saved_vars = (
-            input_features,
-            input_features_global,
-            operation_type,
-            in_coords_key,
-            glob_coords_key,
-            coords_manager,
+        ctx.operation_type = operation_type
+        ctx.in_coords_key = in_coords_key
+        ctx.glob_coords_key = glob_coords_key
+        ctx.coords_manager = (
+            coords_manager._manager if coords_manager is not None else None
         )
+        ctx.save_for_backward(input_features, input_features_global)
 
         fw_fn = get_minkowski_function("BroadcastForward", input_features)
         return fw_fn(
@@ -66,32 +65,24 @@ class MinkowskiBroadcastFunction(Function):
             operation_type,
             in_coords_key,
             glob_coords_key,
-            coords_manager._manager,
+            ctx.coords_manager,
         )
 
     @staticmethod
     def backward(ctx, grad_out_feat):
         if not grad_out_feat.is_contiguous():
             grad_out_feat = grad_out_feat.contiguous()
-
-        (
-            input_features,
-            input_features_global,
-            operation_type,
-            in_coords_key,
-            glob_coords_key,
-            coords_manager,
-        ) = ctx.saved_vars
+        input_features, input_features_global = ctx.saved_tensors
 
         bw_fn = get_minkowski_function("BroadcastBackward", grad_out_feat)
         grad_in_feat, grad_in_feat_glob = bw_fn(
             input_features,
             input_features_global,
             grad_out_feat,
-            operation_type,
-            in_coords_key,
-            glob_coords_key,
-            coords_manager._manager,
+            ctx.operation_type,
+            ctx.in_coords_key,
+            ctx.glob_coords_key,
+            ctx.coords_manager,
         )
         return grad_in_feat, grad_in_feat_glob, None, None, None, None
 
@@ -103,7 +94,7 @@ class MinkowskiBroadcastBase(MinkowskiModuleBase):
 
         self.operation_type = operation_type
 
-        self.broadcast = MinkowskiBroadcastFunction()
+        self.broadcast = MinkowskiBroadcastFunction
 
     def forward(self, input: SparseTensor, input_glob: SparseTensor):
         assert isinstance(input, SparseTensor)

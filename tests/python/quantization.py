@@ -60,6 +60,8 @@ class TestQuantization(unittest.TestCase):
         )
 
         print(len(unique_map))
+        if not torch.cuda.is_available():
+            return
         unique_map = sparse_quantize(
             coords.astype(np.int32), return_maps_only=True, device="cuda"
         )

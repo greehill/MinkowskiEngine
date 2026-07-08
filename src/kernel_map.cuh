@@ -41,6 +41,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/reduce.h>
 #include <thrust/sort.h>
 
 namespace minkowski {

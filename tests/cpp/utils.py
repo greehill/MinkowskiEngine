@@ -23,24 +23,34 @@
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
 
-import os
+from pathlib import Path
 import numpy as np
 import collections
-from urllib.request import urlretrieve
+import unittest
 
 import torch
 
-try:
-    import open3d as o3d
-except ImportError:
-    raise ImportError("Please install open3d with `pip install open3d`.")
-
-if not os.path.isfile("1.ply"):
-    urlretrieve("https://bit.ly/3c2iLhg", "1.ply")
+TEST_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DEFAULT_PLY_PATH = TEST_DATA_DIR / "1.ply"
 
 
 def load_file(file_name):
-    pcd = o3d.io.read_point_cloud(file_name)
+    try:
+        import open3d as o3d
+    except ImportError:
+        raise unittest.SkipTest("open3d is required for point-cloud C++ tests.")
+
+    path = Path(file_name)
+    if not path.is_file():
+        candidate = TEST_DATA_DIR / file_name
+        if candidate.is_file():
+            path = candidate
+        elif file_name == "1.ply" and DEFAULT_PLY_PATH.is_file():
+            path = DEFAULT_PLY_PATH
+        else:
+            raise FileNotFoundError(f"Unable to find test fixture: {file_name}")
+
+    pcd = o3d.io.read_point_cloud(str(path))
     coords = np.array(pcd.points)
     colors = np.array(pcd.colors)
     return coords, colors, pcd

@@ -55,7 +55,10 @@ class MinkowskiUnionFunction(Function):
         )
         for in_feat, union_map in zip(in_feats, union_maps):
             out_feat[union_map[1]] += in_feat[union_map[0]]
-        ctx.keys = (in_coords_keys, coordinate_manager)
+        ctx.in_coordinate_map_keys = tuple(in_coords_keys)
+        ctx.coordinate_manager = (
+            coordinate_manager._manager if coordinate_manager is not None else None
+        )
         ctx.save_for_backward(*union_maps)
         return out_feat
 
@@ -65,16 +68,15 @@ class MinkowskiUnionFunction(Function):
             grad_out_feat = grad_out_feat.contiguous()
 
         union_maps = ctx.saved_tensors
-        in_coords_keys, coordinate_manager = ctx.keys
         num_ch, dtype, device = (
             grad_out_feat.shape[1],
             grad_out_feat.dtype,
             grad_out_feat.device,
         )
         grad_in_feats = []
-        for in_coords_key, union_map in zip(in_coords_keys, union_maps):
+        for in_coords_key, union_map in zip(ctx.in_coordinate_map_keys, union_maps):
             grad_in_feat = torch.zeros(
-                (coordinate_manager.size(in_coords_key), num_ch),
+                (ctx.coordinate_manager.size(in_coords_key), num_ch),
                 dtype=dtype,
                 device=device,
             )
@@ -96,7 +98,7 @@ class MinkowskiUnion(Module):
 
     def __init__(self):
         super(MinkowskiUnion, self).__init__()
-        self.union = MinkowskiUnionFunction()
+        self.union = MinkowskiUnionFunction
 
     def forward(self, *inputs):
         r"""

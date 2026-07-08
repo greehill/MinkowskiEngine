@@ -47,7 +47,9 @@ class MinkowskiPruningFunction(Function):
     ):
         ctx.in_coords_key = in_coords_key
         ctx.out_coords_key = out_coords_key
-        ctx.coords_manager = coords_manager
+        ctx.coords_manager = (
+            coords_manager._manager if coords_manager is not None else None
+        )
 
         in_feat = in_feat.contiguous()
         fw_fn = get_minkowski_function("PruningForward", in_feat)
@@ -56,7 +58,7 @@ class MinkowskiPruningFunction(Function):
             mask,
             ctx.in_coords_key,
             ctx.out_coords_key,
-            ctx.coords_manager._manager,
+            ctx.coords_manager,
         )
 
     @staticmethod
@@ -67,7 +69,7 @@ class MinkowskiPruningFunction(Function):
             grad_out_feat,
             ctx.in_coords_key,
             ctx.out_coords_key,
-            ctx.coords_manager._manager,
+            ctx.coords_manager,
         )
         return grad_in_feat, None, None, None, None
 
@@ -79,7 +81,7 @@ class MinkowskiPruning(MinkowskiModuleBase):
 
     def __init__(self):
         super(MinkowskiPruning, self).__init__()
-        self.pruning = MinkowskiPruningFunction()
+        self.pruning = MinkowskiPruningFunction
 
     def forward(self, input: SparseTensor, mask: torch.Tensor):
         r"""

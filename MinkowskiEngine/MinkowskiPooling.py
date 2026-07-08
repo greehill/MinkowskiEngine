@@ -56,7 +56,6 @@ class MinkowskiLocalPoolingFunction(Function):
             )
 
         input_features = input_features.contiguous()
-        ctx.input_features = input_features
         ctx = save_ctx(
             ctx,
             kernel_generator,
@@ -68,37 +67,40 @@ class MinkowskiLocalPoolingFunction(Function):
 
         fw_fn = get_minkowski_function("LocalPoolingForward", input_features)
         out_feat, num_nonzero = fw_fn(
-            ctx.input_features,
-            kernel_generator.kernel_size,
-            kernel_generator.kernel_stride,
-            kernel_generator.kernel_dilation,
-            kernel_generator.region_type,
+            input_features,
+            ctx.kernel_size,
+            ctx.kernel_stride,
+            ctx.kernel_dilation,
+            ctx.region_type,
             kernel_generator.region_offsets,
             pooling_mode,
             ctx.in_coordinate_map_key,
             ctx.out_coordinate_map_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
-        ctx.num_nonzero = num_nonzero
+        ctx.save_for_backward(
+            input_features, kernel_generator.region_offsets, num_nonzero
+        )
         return out_feat
 
     @staticmethod
     def backward(ctx, grad_out_feat):
         grad_out_feat = grad_out_feat.contiguous()
+        input_features, region_offsets, num_nonzero = ctx.saved_tensors
         bw_fn = get_minkowski_function("LocalPoolingBackward", grad_out_feat)
         grad_in_feat = bw_fn(
-            ctx.input_features,
+            input_features,
             grad_out_feat,
-            ctx.num_nonzero,
-            ctx.kernel_generator.kernel_size,
-            ctx.kernel_generator.kernel_stride,
-            ctx.kernel_generator.kernel_dilation,
-            ctx.kernel_generator.region_type,
-            ctx.kernel_generator.region_offsets,
+            num_nonzero,
+            ctx.kernel_size,
+            ctx.kernel_stride,
+            ctx.kernel_dilation,
+            ctx.region_type,
+            region_offsets,
             ctx.pooling_mode,
             ctx.in_coordinate_map_key,
             ctx.out_coordinate_map_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
         return (
             grad_in_feat,
@@ -147,7 +149,7 @@ class MinkowskiPoolingBase(MinkowskiModuleBase):
         self.kernel_generator = kernel_generator
         self.pooling_mode = pooling_mode
         self.dimension = dimension
-        self.pooling = MinkowskiLocalPoolingFunction()
+        self.pooling = MinkowskiLocalPoolingFunction
 
     def forward(
         self,
@@ -455,7 +457,6 @@ class MinkowskiLocalPoolingTransposeFunction(Function):
             )
 
         input_features = input_features.contiguous()
-        ctx.input_features = input_features
         ctx = save_ctx(
             ctx,
             kernel_generator,
@@ -467,38 +468,41 @@ class MinkowskiLocalPoolingTransposeFunction(Function):
 
         fw_fn = get_minkowski_function("LocalPoolingTransposeForward", input_features)
         out_feat, num_nonzero = fw_fn(
-            ctx.input_features,
-            kernel_generator.kernel_size,
-            kernel_generator.kernel_stride,
-            kernel_generator.kernel_dilation,
-            kernel_generator.region_type,
+            input_features,
+            ctx.kernel_size,
+            ctx.kernel_stride,
+            ctx.kernel_dilation,
+            ctx.region_type,
             kernel_generator.region_offsets,
             kernel_generator.expand_coordinates,
             pooling_mode,
             ctx.in_coordinate_map_key,
             ctx.out_coordinate_map_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
-        ctx.num_nonzero = num_nonzero
+        ctx.save_for_backward(
+            input_features, kernel_generator.region_offsets, num_nonzero
+        )
         return out_feat
 
     @staticmethod
     def backward(ctx, grad_out_feat):
         grad_out_feat = grad_out_feat.contiguous()
+        input_features, region_offsets, num_nonzero = ctx.saved_tensors
         bw_fn = get_minkowski_function("LocalPoolingTransposeBackward", grad_out_feat)
         grad_in_feat = bw_fn(
-            ctx.input_features,
+            input_features,
             grad_out_feat,
-            ctx.num_nonzero,
-            ctx.kernel_generator.kernel_size,
-            ctx.kernel_generator.kernel_stride,
-            ctx.kernel_generator.kernel_dilation,
-            ctx.kernel_generator.region_type,
-            ctx.kernel_generator.region_offsets,
+            num_nonzero,
+            ctx.kernel_size,
+            ctx.kernel_stride,
+            ctx.kernel_dilation,
+            ctx.region_type,
+            region_offsets,
             ctx.pooling_mode,
             ctx.in_coordinate_map_key,
             ctx.out_coordinate_map_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
         return (
             grad_in_feat,
@@ -577,7 +581,7 @@ class MinkowskiPoolingTranspose(MinkowskiPoolingBase):
             is_transpose,
             dimension=dimension,
         )
-        self.pooling = MinkowskiLocalPoolingTransposeFunction()
+        self.pooling = MinkowskiLocalPoolingTransposeFunction
 
 
 class MinkowskiGlobalPoolingFunction(Function):
@@ -596,10 +600,11 @@ class MinkowskiGlobalPoolingFunction(Function):
             )
         input_features = input_features.contiguous()
 
-        ctx.input_features = input_features
         ctx.in_coords_key = in_coordinate_map_key
         ctx.out_coords_key = out_coordinate_map_key
-        ctx.coordinate_manager = coordinate_manager
+        ctx.coordinate_manager = (
+            coordinate_manager._manager if coordinate_manager is not None else None
+        )
         ctx.pooling_mode = pooling_mode
 
         fw_fn = get_minkowski_function("GlobalPoolingForward", input_features)
@@ -608,25 +613,26 @@ class MinkowskiGlobalPoolingFunction(Function):
             pooling_mode,
             ctx.in_coords_key,
             ctx.out_coords_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
-        ctx.num_nonzero = num_nonzero
+        ctx.save_for_backward(input_features, num_nonzero)
         return out_feat
 
     @staticmethod
     def backward(ctx, grad_out_feat):
         grad_out_feat = grad_out_feat.contiguous()
+        input_features, num_nonzero = ctx.saved_tensors
         bw_fn = get_minkowski_function("GlobalPoolingBackward", grad_out_feat)
         grad_in_feat = bw_fn(
-            ctx.input_features,
+            input_features,
             grad_out_feat,
-            ctx.num_nonzero,
+            num_nonzero,
             ctx.pooling_mode,
             ctx.in_coords_key,
             ctx.out_coords_key,
-            ctx.coordinate_manager._manager,
+            ctx.coordinate_manager,
         )
-        return grad_in_feat, None, None, None, None, None
+        return grad_in_feat, None, None, None, None
 
 
 class MinkowskiGlobalPooling(MinkowskiModuleBase):
@@ -652,7 +658,7 @@ class MinkowskiGlobalPooling(MinkowskiModuleBase):
         ), f"Mode must be an instance of PoolingMode. mode={mode}"
 
         self.pooling_mode = mode
-        self.pooling = MinkowskiGlobalPoolingFunction()
+        self.pooling = MinkowskiGlobalPoolingFunction
 
     def forward(
         self,
