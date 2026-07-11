@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MinkowskiEngine"
-version = "0.5.4"
+version = "0.6.0+greehill.1"
 description = "A convolutional neural network library for sparse tensors"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
@@ -46,10 +46,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NVIDIA/MinkowskiEngine"
+Homepage = "https://github.com/greehill/MinkowskiEngine"
 Documentation = "https://nvidia.github.io/MinkowskiEngine/"
-Repository = "https://github.com/NVIDIA/MinkowskiEngine"
-Issues = "https://github.com/NVIDIA/MinkowskiEngine/issues"
+Repository = "https://github.com/greehill/MinkowskiEngine"
+Issues = "https://github.com/greehill/MinkowskiEngine/issues"
 
 [tool.setuptools]
 include-package-data = true

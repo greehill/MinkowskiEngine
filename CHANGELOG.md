@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.6.0+greehill.1]
+
+- Establish the Greehill-maintained compatibility release line.
+- Support Python 3.10 through 3.14 and PyTorch 2.5 through 2.10.
+- Add `uv`-first PEP 517 builds and modern CPU and CUDA build configuration.
+- Add compatibility fixes for current PyTorch and CUDA toolchains.
+- Add deterministic local point-cloud fixtures for offline tests.
+- Add Linux and macOS CPU validation plus opt-in Linux GPU validation,
+  including the TSE Python 3.12, PyTorch 2.10, cu126 release lane.
+
 ## [0.5.5]
 
 - MKL compilation fix (#358)
