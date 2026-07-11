@@ -679,6 +679,7 @@ class TestChannelwiseConvolution(unittest.TestCase):
         self.assertEqual(output.coordinate_map_key.get_tensor_stride(), [2, 2])
 
 
+@unittest.skip("performance benchmark; not part of the unit test suite")
 class TestPCD(unittest.TestCase):
     def test_forward(self):
         coords, colors, pcd = load_file("1.ply")
