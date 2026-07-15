@@ -19,7 +19,7 @@ Install PyTorch first, then build MinkowskiEngine from source with `uv`.
 CPU-only:
 
 ```bash
-git clone https://github.com/NVIDIA/MinkowskiEngine.git
+git clone https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.12
@@ -37,7 +37,7 @@ MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
 CUDA on Linux `x86_64`:
 
 ```bash
-git clone https://github.com/NVIDIA/MinkowskiEngine.git
+git clone https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.13

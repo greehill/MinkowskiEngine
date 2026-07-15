@@ -100,7 +100,7 @@ brew install openblas libomp
 Shared steps:
 
 ```bash
-git clone https://github.com/NVIDIA/MinkowskiEngine.git
+git clone https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.12
@@ -125,7 +125,7 @@ Example for PyTorch `2.10.0` with CUDA `13.0` wheels:
 sudo apt-get update
 sudo apt-get install -y build-essential libopenblas-dev
 
-git clone https://github.com/NVIDIA/MinkowskiEngine.git
+git clone https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.13
