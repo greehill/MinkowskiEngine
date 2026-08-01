@@ -50,4 +50,8 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install --no-build-isolation --no-deps . && \
     uv pip check
 
+# CUDA 12 minor-version compatibility uses the host driver on driver 525+.
+# Do not let the base image's forward-compatibility libcuda shadow that driver.
+RUN rm -rf /usr/local/cuda/compat
+
 CMD ["python", "-c", "import MinkowskiEngine as ME; import torch; print(ME.__version__, torch.__version__, torch.version.cuda)"]

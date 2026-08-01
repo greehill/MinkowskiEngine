@@ -120,6 +120,10 @@ class TestBuildConfig(unittest.TestCase):
     def test_local_point_cloud_fixture_exists(self):
         self.assertTrue(DEFAULT_PLY_PATH.is_file(), DEFAULT_PLY_PATH)
 
+    def test_release_image_uses_host_cuda_driver(self):
+        dockerfile = (ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("rm -rf /usr/local/cuda/compat", dockerfile)
+
     def test_macos_openmp_flags_for_apple_clang(self):
         compiler = Path("/usr/bin/clang++")
         with mock.patch(
