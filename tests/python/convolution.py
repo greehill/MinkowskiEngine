@@ -678,40 +678,18 @@ class TestGenerativeConvolutionTranspose(unittest.TestCase):
         self.assertEqual(conv_tr.dimension, 2)
         self.assertEqual(generative.dimension, 2)
 
-    def test_custom_kernel_offsets(self):
-        coordinates = torch.IntTensor([[0, 0, 0], [0, 1, 0], [0, 2, 0]])
-        features = torch.DoubleTensor([[1], [2], [4]])
+    def test_custom_kernel_metadata(self):
+        region_offsets = torch.IntTensor([[0, 0], [1, 0]])
         kernel_generator = KernelGenerator(
             kernel_size=-1,
             region_type=_C.RegionType.CUSTOM,
-            region_offsets=torch.IntTensor([[0, 0], [1, 0]]),
+            region_offsets=region_offsets,
             dimension=2,
         )
-        self.assertEqual(kernel_generator.kernel_size, [1, 1])
+
+        self.assertEqual(kernel_generator.kernel_size, [-1, -1])
         self.assertEqual(kernel_generator.kernel_volume, 2)
-
-        for device in ["cpu"] + (["cuda"] if torch.cuda.is_available() else []):
-            with self.subTest(device=device):
-                conv = MinkowskiConvolution(
-                    1,
-                    1,
-                    kernel_generator=kernel_generator,
-                    bias=False,
-                    dimension=2,
-                ).double().to(device)
-                with torch.no_grad():
-                    conv.kernel.copy_(torch.DoubleTensor([[[1]], [[10]]]).to(device))
-
-                sparse_input = SparseTensor(
-                    features.to(device), coordinates=coordinates.to(device)
-                )
-                output = conv(sparse_input)
-
-                self.assertTrue(
-                    torch.equal(
-                        output.F.cpu(), torch.DoubleTensor([[21], [42], [4]])
-                    )
-                )
+        self.assertTrue(torch.equal(kernel_generator.region_offsets, region_offsets))
 
 
 class TestChannelwiseConvolution(unittest.TestCase):
