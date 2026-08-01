@@ -150,6 +150,13 @@ class TestBuildConfig(unittest.TestCase):
         dockerfile = (ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("rm -rf /usr/local/cuda/compat", dockerfile)
 
+    def test_cpp_runner_overrides_inherited_cuda_mode(self):
+        runner = (ROOT / "tests" / "cpp" / "test_all.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("MINKOWSKI_CPU_ONLY=0 MINKOWSKI_FORCE_CUDA=1", runner)
+        self.assertIn("MINKOWSKI_CPU_ONLY=1 MINKOWSKI_FORCE_CUDA=0", runner)
+
     def test_macos_openmp_flags_for_apple_clang(self):
         compiler = Path("/usr/bin/clang++")
         with mock.patch(
