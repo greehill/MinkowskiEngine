@@ -29,6 +29,9 @@ from unittest import mock
 
 from build_helpers import (
     BlasConfig,
+    CPP_TEST_SOURCE_SETS,
+    ROOT,
+    SRC_PATH,
     _configure_macos_platform_environment,
     _macos_llvm_runtime_library_dirs,
     _macos_openmp_flags,
@@ -67,6 +70,15 @@ class TestBuildConfig(unittest.TestCase):
 
         self.assertTrue(extension.sources)
         self.assertTrue(all(Path(source).is_absolute() for source in extension.sources))
+
+    def test_all_cpp_test_sources_exist(self):
+        test_root = ROOT / "tests" / "cpp"
+        for target, (_, test_files, source_files, _) in CPP_TEST_SOURCE_SETS.items():
+            paths = [test_root / filename for filename in test_files]
+            paths.extend(SRC_PATH / filename for filename in source_files)
+            with self.subTest(target=target):
+                missing = [str(path) for path in paths if not path.is_file()]
+                self.assertEqual(missing, [])
 
     def test_blas_fallback_finds_linux_multiarch_library(self):
         with tempfile.TemporaryDirectory() as temp_dir:
