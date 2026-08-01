@@ -74,18 +74,14 @@ region_iterator_test(const torch::Tensor &coordinates,
       RegionType::HYPER_CUBE, D, tensor_stride.data(), s_kernel_size.data(),
       dilation.data());
 
-  std::vector<coordinate_type> lb(D), ub(D);
   std::vector<coordinate_type> tmp(D);
-  LOG_DEBUG(tmp.size(), tmp.capacity());
   std::vector<std::vector<coordinate_type>> all_regions;
 
   for (index_type i = 0; i < N; ++i) {
-    region.set_bounds(&ptr[i * D], lb.data(), ub.data(), tmp.data());
-    for (auto const &coordinate : region) {
-      std::cout << PtrToString(coordinate.data(), D) << "\n";
-      std::vector<coordinate_type> vec_coordinate(D);
-      std::copy_n(coordinate.data(), D, vec_coordinate.data());
-      all_regions.push_back(std::move(vec_coordinate));
+    for (index_type kernel_index = 0; kernel_index < region.volume();
+         ++kernel_index) {
+      region.coordinate_at(kernel_index, &ptr[i * D], tmp.data());
+      all_regions.emplace_back(tmp.cbegin(), tmp.cend());
     }
   }
 
