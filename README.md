@@ -164,8 +164,8 @@ The build now uses environment variables instead of `setup.py install` flags:
 - `MINKOWSKI_CPU_ONLY=1` forces a CPU-only build
 - `MINKOWSKI_FORCE_CUDA=1` requires a CUDA build and fails if torch or `CUDA_HOME` are not CUDA-capable
 - `MINKOWSKI_BLAS=openblas|mkl|atlas|flexiblas|blas` chooses the BLAS backend
-- `MINKOWSKI_BLAS_INCLUDE_DIRS=/path/one,/path/two` overrides BLAS header discovery
-- `MINKOWSKI_BLAS_LIBRARY_DIRS=/path/one,/path/two` overrides BLAS library discovery
+- `MINKOWSKI_BLAS_INCLUDE_DIRS=/path/one,/path/two` overrides BLAS header discovery when `MINKOWSKI_BLAS` is set
+- `MINKOWSKI_BLAS_LIBRARY_DIRS=/path/one,/path/two` overrides BLAS library discovery when `MINKOWSKI_BLAS` is set
 - Existing toolchain variables such as `CUDA_HOME`, `CXX`, `MAX_JOBS`, `USE_NINJA`, and `TORCH_CUDA_ARCH_LIST` are still honored
 - On macOS, the runtime defaults `OMP_NUM_THREADS=1` unless you override it explicitly
 

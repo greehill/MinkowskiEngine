@@ -47,6 +47,8 @@ jobs:
       REPO_RUNNER_LABELS: ${{ vars.MINKOWSKI_GPU_RUNNER_LABELS }}
       MANUAL_RUNNER_LABELS: ${{ inputs.runner_labels }}
       EVENT_NAME: ${{ github.event_name }}
+      EVENT_REPOSITORY: ${{ github.repository }}
+      PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
 
     steps:
       - name: Plan GPU matrix
@@ -92,6 +94,8 @@ jobs:
           ]
 
           event_name = os.environ.get("EVENT_NAME", "")
+          event_repository = os.environ.get("EVENT_REPOSITORY", "")
+          pr_head_repository = os.environ.get("PR_HEAD_REPOSITORY", "")
           gpu_ci_enabled = os.environ.get("GPU_CI_ENABLED", "").strip().lower() == "true"
           configured_labels = (
               os.environ.get("MANUAL_RUNNER_LABELS", "").strip()
@@ -102,7 +106,9 @@ jobs:
           reason = ""
           selected_entries = []
 
-          if event_name != "workflow_dispatch" and not gpu_ci_enabled:
+          if event_name == "pull_request" and pr_head_repository != event_repository:
+              reason = "GPU CI does not run fork pull requests on self-hosted runners."
+          elif event_name != "workflow_dispatch" and not gpu_ci_enabled:
               reason = "GPU CI is disabled. Set MINKOWSKI_GPU_CI_ENABLED=true to run it on push and pull_request."
           elif not configured_labels:
               source = "workflow input `runner_labels`" if event_name == "workflow_dispatch" else "repo variable `MINKOWSKI_GPU_RUNNER_LABELS`"

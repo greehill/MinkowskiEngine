@@ -108,6 +108,15 @@ class TestBuildConfig(unittest.TestCase):
         self.assertEqual(config.library_dirs, (str(library_dir),))
         self.assertEqual(config.include_dirs, (str(include_dir),))
 
+    def test_blas_directory_overrides_require_backend(self):
+        with mock.patch.dict(
+            "os.environ",
+            {"MINKOWSKI_BLAS_LIBRARY_DIRS": "/opt/custom-blas/lib"},
+            clear=True,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "require MINKOWSKI_BLAS"):
+                detect_blas_config()
+
     def test_local_point_cloud_fixture_exists(self):
         self.assertTrue(DEFAULT_PLY_PATH.is_file(), DEFAULT_PLY_PATH)
 

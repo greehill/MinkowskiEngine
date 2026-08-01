@@ -268,6 +268,11 @@ def detect_blas_config() -> BlasConfig:
 
     env_include_dirs = _split_env_paths("MINKOWSKI_BLAS_INCLUDE_DIRS")
     env_library_dirs = _split_env_paths("MINKOWSKI_BLAS_LIBRARY_DIRS")
+    if (env_include_dirs or env_library_dirs) and not requested_name:
+        raise RuntimeError(
+            "MINKOWSKI_BLAS_INCLUDE_DIRS and MINKOWSKI_BLAS_LIBRARY_DIRS "
+            "require MINKOWSKI_BLAS to select the backend."
+        )
 
     if requested_name and (env_include_dirs or env_library_dirs):
         libraries = ("mkl_rt",) if requested_name == "mkl" else (requested_name,)

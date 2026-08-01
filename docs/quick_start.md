@@ -66,7 +66,7 @@ MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
 - `MINKOWSKI_CPU_ONLY=1` forces CPU-only builds
 - `MINKOWSKI_FORCE_CUDA=1` forces CUDA builds and requires both CUDA-enabled torch and `CUDA_HOME`
 - `MINKOWSKI_BLAS` selects the BLAS backend
-- `MINKOWSKI_BLAS_INCLUDE_DIRS` and `MINKOWSKI_BLAS_LIBRARY_DIRS` override BLAS discovery
+- `MINKOWSKI_BLAS_INCLUDE_DIRS` and `MINKOWSKI_BLAS_LIBRARY_DIRS` override BLAS discovery when `MINKOWSKI_BLAS` is set
 - `TORCH_CUDA_ARCH_LIST`, `CXX`, `MAX_JOBS`, and `USE_NINJA` are still honored
 
 ## Running an example
