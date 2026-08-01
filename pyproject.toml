@@ -1,4 +1,6 @@
 [build-system]
+# Torch is intentionally selected in the target environment before this build.
+# Isolating it can silently choose a wheel with the wrong CPU/CUDA ABI.
 requires = ["setuptools>=77", "wheel", "packaging"]
 build-backend = "setuptools.build_meta"
 

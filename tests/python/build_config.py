@@ -108,6 +108,32 @@ class TestBuildConfig(unittest.TestCase):
         self.assertEqual(config.library_dirs, (str(library_dir),))
         self.assertEqual(config.include_dirs, (str(include_dir),))
 
+    def test_blas_fallback_finds_mkl_intel64_library(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            prefix = Path(temp_dir)
+            library_dir = prefix / "lib" / "intel64"
+            library_dir.mkdir(parents=True)
+            (library_dir / "libmkl_rt.so").touch()
+            include_dir = prefix / "include"
+            include_dir.mkdir()
+            (include_dir / "mkl.h").touch()
+
+            with (
+                mock.patch.dict(
+                    "os.environ", {"MINKOWSKI_BLAS": "mkl"}, clear=True
+                ),
+                mock.patch("build_helpers._run_pkg_config", return_value=None),
+                mock.patch(
+                    "build_helpers._candidate_prefixes", return_value=[prefix]
+                ),
+            ):
+                config = detect_blas_config()
+
+        self.assertEqual(config.libraries, ("mkl_rt",))
+        self.assertEqual(config.library_dirs, (str(library_dir),))
+        self.assertEqual(config.include_dirs, (str(include_dir),))
+        self.assertEqual(config.compile_defines, ("-DUSE_MKL",))
+
     def test_blas_directory_overrides_require_backend(self):
         with mock.patch.dict(
             "os.environ",

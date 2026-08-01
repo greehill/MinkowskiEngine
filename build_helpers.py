@@ -225,6 +225,7 @@ def _library_candidates(prefix: Path) -> list[Path]:
     candidates = [
         prefix / "lib",
         prefix / "lib64",
+        prefix / "lib" / "intel64",
         prefix / "opt" / "openblas" / "lib",
         prefix / "opt" / "libomp" / "lib",
         prefix / "lib" / "c++",

@@ -83,6 +83,8 @@ Current limits:
 
 `uv` is the supported install and test workflow for this repository. Install PyTorch first, then build MinkowskiEngine from source with `uv pip install --no-build-isolation -v .`.
 
+Build isolation is intentionally unsupported. Selecting Torch inside an isolated build can choose a wheel with the wrong CPU/CUDA ABI; commands must use the already selected Torch installation through `--no-build-isolation`.
+
 ### CPU-only build with `uv`
 
 Linux:
