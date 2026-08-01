@@ -1,0 +1,207 @@
+name: GPU CI
+
+on:
+  pull_request_target:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      runner_labels:
+        description: "Optional comma-separated CUDA runner labels for this run"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+  MINKOWSKI_BLAS: openblas
+  MINKOWSKI_FORCE_CUDA: "1"
+  MINKOWSKI_LEAK_TEST_ITER: "1"
+  GPU_TEST_MODULES: >-
+    tests.python.convolution
+    tests.python.pool
+    tests.python.broadcast
+    tests.python.pruning
+    tests.python.union
+    tests.python.interpolation
+    tests.python.spmm
+    tests.python.sparse_tensor
+    tests.python.coordinate_manager
+    tests.python.quantization
+
+jobs:
+  plan-gpu:
+    name: plan gpu matrix
+    runs-on: ubuntu-latest
+    outputs:
+      has-targets: ${{ steps.plan.outputs.has-targets }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      reason: ${{ steps.plan.outputs.reason }}
+
+    env:
+      GPU_CI_ENABLED: ${{ vars.MINKOWSKI_GPU_CI_ENABLED }}
+      REPO_RUNNER_LABELS: ${{ vars.MINKOWSKI_GPU_RUNNER_LABELS }}
+      MANUAL_RUNNER_LABELS: ${{ inputs.runner_labels }}
+      EVENT_NAME: ${{ github.event_name }}
+      EVENT_REPOSITORY: ${{ github.repository }}
+      PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+
+    steps:
+      - name: Plan GPU matrix
+        id: plan
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          github_output = Path(os.environ["GITHUB_OUTPUT"])
+          github_step_summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+
+          matrix_entries = [
+              {
+                  "python-version": "3.10",
+                  "torch-version": "2.5.0",
+                  "torch-index": "cu124",
+                  "runner-label": "cuda-12-4",
+                  "cuda-home": "/usr/local/cuda-12.4",
+              },
+              {
+                  "python-version": "3.11",
+                  "torch-version": "2.6.0",
+                  "torch-index": "cu126",
+                  "runner-label": "cuda-12-6",
+                  "cuda-home": "/usr/local/cuda-12.6",
+              },
+              {
+                  "python-version": "3.12",
+                  "torch-version": "2.10.0",
+                  "torch-index": "cu128",
+                  "runner-label": "cuda-12-8",
+                  "cuda-home": "/usr/local/cuda-12.8",
+              },
+              {
+                  "python-version": "3.12",
+                  "torch-version": "2.7.0",
+                  "torch-index": "cu128",
+                  "runner-label": "cuda-12-8",
+                  "cuda-home": "/usr/local/cuda-12.8",
+              },
+          ]
+
+          event_name = os.environ.get("EVENT_NAME", "")
+          event_repository = os.environ.get("EVENT_REPOSITORY", "")
+          pr_head_repository = os.environ.get("PR_HEAD_REPOSITORY", "")
+          gpu_ci_enabled = os.environ.get("GPU_CI_ENABLED", "").strip().lower() == "true"
+          configured_labels = (
+              os.environ.get("MANUAL_RUNNER_LABELS", "").strip()
+              if event_name == "workflow_dispatch"
+              else os.environ.get("REPO_RUNNER_LABELS", "").strip()
+          )
+
+          reason = ""
+          selected_entries = []
+
+          if event_name == "pull_request_target" and pr_head_repository != event_repository:
+              reason = "GPU CI does not run fork pull requests on self-hosted runners."
+          elif event_name != "workflow_dispatch" and not gpu_ci_enabled:
+              reason = "GPU CI is disabled. Set MINKOWSKI_GPU_CI_ENABLED=true to run it on pushes and pull requests."
+          elif not configured_labels:
+              source = "workflow input `runner_labels`" if event_name == "workflow_dispatch" else "repo variable `MINKOWSKI_GPU_RUNNER_LABELS`"
+              reason = f"No CUDA runner labels were configured via {source}."
+          else:
+              requested_labels = {
+                  token.strip()
+                  for token in configured_labels.replace(";", ",").split(",")
+                  if token.strip()
+              }
+              selected_entries = [
+                  entry for entry in matrix_entries if entry["runner-label"] in requested_labels
+              ]
+              if not selected_entries:
+                  reason = (
+                      "Configured CUDA runner labels did not match any validated GPU matrix entries. "
+                      f"Configured labels: {', '.join(sorted(requested_labels))}"
+                  )
+
+          has_targets = bool(selected_entries)
+          with github_output.open("a", encoding="utf-8") as fh:
+              fh.write(f"has-targets={'true' if has_targets else 'false'}\n")
+              fh.write(f"matrix={json.dumps({'include': selected_entries})}\n")
+              fh.write(f"reason={reason}\n")
+
+          summary_lines = [
+              f"Event: {event_name}",
+              f"GPU CI enabled on push/PR: {'yes' if gpu_ci_enabled else 'no'}",
+              f"Configured CUDA labels: {configured_labels or '<none>'}",
+          ]
+          if has_targets:
+              summary_lines.append(f"Scheduled GPU jobs: {len(selected_entries)}")
+          else:
+              summary_lines.append(f"GPU CI skipped: {reason}")
+          with github_step_summary.open("a", encoding="utf-8") as fh:
+              fh.write("\n".join(summary_lines) + "\n")
+          PY
+
+  linux-gpu:
+    name: gpu py${{ matrix.python-version }} torch${{ matrix.torch-version }} ${{ matrix.torch-index }}
+    needs: plan-gpu
+    if: needs.plan-gpu.outputs.has-targets == 'true'
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - nvidia
+      - ${{ matrix.runner-label }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan-gpu.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Create virtual environment
+        run: uv venv .venv --python "${{ matrix.python-version }}"
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
+          uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}" \
+            --index-url https://download.pytorch.org/whl/${{ matrix.torch-index }}
+          uv pip install --python .venv/bin/python numpy ninja
+
+      - name: Build MinkowskiEngine
+        env:
+          CUDA_HOME: ${{ matrix.cuda-home }}
+        run: |
+          uv pip install --python .venv/bin/python --no-build-isolation -v .
+
+      - name: Run GPU unittest suite
+        env:
+          CUDA_HOME: ${{ matrix.cuda-home }}
+        run: |
+          uv run --no-sync --python .venv/bin/python python -m unittest $GPU_TEST_MODULES
+
+  gpu-skipped:
+    name: gpu ci skipped
+    needs: plan-gpu
+    if: needs.plan-gpu.outputs.has-targets != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Report skipped GPU validation
+        run: |
+          echo "${{ needs.plan-gpu.outputs.reason }}"

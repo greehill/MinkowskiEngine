@@ -34,7 +34,7 @@ class TestCase(unittest.TestCase):
     def test(self):
         if not torch.cuda.is_available():
             return
-        pool = MinkowskiDirectMaxPoolingFunction()
+        pool = MinkowskiDirectMaxPoolingFunction
         in_map = torch.randint(0, 5, (10,)).int()
         out_map = torch.randint(0, 3, (10,)).int()
         in_feat = torch.rand(5, 16).double()
@@ -71,7 +71,7 @@ class TestCase(unittest.TestCase):
     def test_long(self):
         if not torch.cuda.is_available():
             return
-        pool = MinkowskiDirectMaxPoolingFunction()
+        pool = MinkowskiDirectMaxPoolingFunction
         in_map = torch.randint(0, 5, (10,))
         out_map = torch.randint(0, 3, (10,))
         in_feat = torch.rand(5, 16).double()

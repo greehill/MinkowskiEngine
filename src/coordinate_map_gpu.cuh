@@ -136,9 +136,11 @@ public:
       LOG_DEBUG("Reserve map of",
                 compute_hash_table_size(size, m_hashtable_occupancy),
                 "for concurrent_unordered_map of size", size);
-      m_map = map_type::create(
+      auto new_map = map_type::create(
           compute_hash_table_size(size, m_hashtable_occupancy),
           m_unused_element, m_unused_key, m_hasher, m_equal, m_map_allocator);
+      auto new_map_deleter = new_map.get_deleter();
+      m_map = std::shared_ptr<map_type>(new_map.release(), new_map_deleter);
       LOG_DEBUG("Done concurrent_unordered_map creation");
       CUDA_TRY(cudaStreamSynchronize(0));
       m_capacity = size;

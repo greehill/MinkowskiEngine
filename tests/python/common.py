@@ -21,25 +21,35 @@
 # Please cite "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
-import os
+from pathlib import Path
+import unittest
+
 import numpy as np
 
 import torch
 import MinkowskiEngine as ME
 
-from urllib.request import urlretrieve
-
-if not os.path.isfile("1.ply"):
-    urlretrieve("http://cvgl.stanford.edu/data2/minkowskiengine/1.ply", "1.ply")
+TEST_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DEFAULT_PLY_PATH = TEST_DATA_DIR / "1.ply"
 
 
 def load_file(file_name):
     try:
         import open3d as o3d
     except ImportError:
-        raise ImportError("Please install open3d with `pip install open3d`.")
+        raise unittest.SkipTest("open3d is required for point-cloud tests.")
 
-    pcd = o3d.io.read_point_cloud(file_name)
+    file_path = Path(file_name)
+    if not file_path.is_file():
+        candidate = TEST_DATA_DIR / file_name
+        if candidate.is_file():
+            file_path = candidate
+        elif file_name == "1.ply" and DEFAULT_PLY_PATH.is_file():
+            file_path = DEFAULT_PLY_PATH
+        else:
+            raise FileNotFoundError(f"Unable to find test fixture: {file_name}")
+
+    pcd = o3d.io.read_point_cloud(str(file_path))
     coords = np.array(pcd.points)
     colors = np.array(pcd.colors)
     return coords, colors, pcd

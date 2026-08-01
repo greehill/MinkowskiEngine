@@ -1,16 +1,27 @@
-export CXX=g++-7;
+#!/usr/bin/env bash
+set -euo pipefail
 
-rm -rf build; python setup.py install --test=coordinate
-python -m unittest coordinate_test
+: "${PYTHON_BIN:=.venv/bin/python}"
+: "${MINKOWSKI_BLAS:=openblas}"
+PYTHON_ENV="$(cd "$(dirname "$PYTHON_BIN")/.." && pwd)"
 
-rm -rf build; python setup.py install --test=coordinate_map_key
-python -m unittest coordinate_map_key_test
+run_test() {
+  local target="$1"
+  local module="$2"
+  local build_root="build/cpp-tests/${target}"
 
-rm -rf build; python setup.py install --test=coordinate_map_cpu
-python -m unittest coordinate_map_cpu_test
+  # CPP_TEST_SOURCE_SETS selects CppExtension or CUDAExtension for each target.
+  UV_PROJECT_ENVIRONMENT="$PYTHON_ENV" MINKOWSKI_BLAS="$MINKOWSKI_BLAS" \
+    uv run --no-sync --python "$PYTHON_BIN" python tests/cpp/setup.py \
+    "--test=${target}" --nodebug build_ext \
+    --build-temp "${build_root}/temp" --build-lib "${build_root}/lib"
+  UV_PROJECT_ENVIRONMENT="$PYTHON_ENV" \
+    PYTHONPATH="${PWD}/${build_root}/lib:${PWD}/tests/cpp:${PWD}" \
+    uv run --no-sync --python "$PYTHON_BIN" python -m unittest "tests.cpp.${module}"
+}
 
-rm -rf build; python setup.py install --test=coordinate_map_gpu
-python -m unittest coordinate_map_gpu_test
-
-rm -rf build; python setup.py install --test=region_cpu
-python -m unittest kernel_region_cpu_test
+run_test coordinate coordinate_test
+run_test coordinate_map_key coordinate_map_key_test
+run_test coordinate_map_cpu coordinate_map_cpu_test
+run_test coordinate_map_gpu coordinate_map_gpu_test
+run_test kernel_region_cpu kernel_region_cpu_test

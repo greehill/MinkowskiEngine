@@ -56,9 +56,9 @@ class MinkowskiInterpolationFunction(Function):
             coordinate_manager._manager,
         )
         ctx.save_for_backward(in_map, out_map, weights)
-        ctx.inputs = (
-            in_coordinate_map_key,
-            coordinate_manager,
+        ctx.in_coordinate_map_key = in_coordinate_map_key
+        ctx.coordinate_manager = (
+            coordinate_manager._manager if coordinate_manager is not None else None
         )
         return out_feat, in_map, out_map, weights
 
@@ -68,10 +68,6 @@ class MinkowskiInterpolationFunction(Function):
     ):
         grad_out_feat = grad_out_feat.contiguous()
         bw_fn = get_minkowski_function("InterpolationBackward", grad_out_feat)
-        (
-            in_coordinate_map_key,
-            coordinate_manager,
-        ) = ctx.inputs
         in_map, out_map, weights = ctx.saved_tensors
 
         grad_in_feat = bw_fn(
@@ -79,8 +75,8 @@ class MinkowskiInterpolationFunction(Function):
             in_map,
             out_map,
             weights,
-            in_coordinate_map_key,
-            coordinate_manager._manager,
+            ctx.in_coordinate_map_key,
+            ctx.coordinate_manager,
         )
         return grad_in_feat, None, None, None
 
@@ -102,7 +98,7 @@ class MinkowskiInterpolation(MinkowskiModuleBase):
         MinkowskiModuleBase.__init__(self)
         self.return_kernel_map = return_kernel_map
         self.return_weights = return_weights
-        self.interp = MinkowskiInterpolationFunction()
+        self.interp = MinkowskiInterpolationFunction
 
     def forward(
         self,

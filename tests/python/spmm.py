@@ -40,6 +40,9 @@ class TestSPMM(unittest.TestCase):
         out = spmm(rows, cols, vals, size, mat, is_sorted=False)
         print(out)
 
+        if not torch.cuda.is_available():
+            return
+
         rows = rows.cuda()
         cols = cols.cuda()
         vals = vals.cuda()
@@ -57,6 +60,9 @@ class TestSPMM(unittest.TestCase):
         out = spmm(rows, cols, vals, size, mat, is_sorted=True)
         print(out)
 
+        if not torch.cuda.is_available():
+            return
+
         rows = rows.cuda()
         cols = cols.cuda()
         vals = vals.cuda()
@@ -71,7 +77,7 @@ class TestSPMM(unittest.TestCase):
         size = [2, 4]
         mat = torch.rand(4, 3).double()
         mat.requires_grad_()
-        spmm_fn = MinkowskiSPMMFunction()
+        spmm_fn = MinkowskiSPMMFunction
         out = spmm_fn.apply(rows, cols, vals, size, mat)
         print(out)
 
@@ -79,6 +85,9 @@ class TestSPMM(unittest.TestCase):
         loss.backward()
         print(mat.grad)
         self.assertTrue(gradcheck(spmm_fn, (rows, cols, vals, size, mat)))
+
+        if not torch.cuda.is_available():
+            return
 
         rows = rows.cuda()
         cols = cols.cuda()
@@ -99,7 +108,7 @@ class TestSPMM(unittest.TestCase):
         size = [2, 4]
         mat = torch.rand(4, 3).double()
         mat.requires_grad_()
-        spmm_fn = MinkowskiSPMMAverageFunction()
+        spmm_fn = MinkowskiSPMMAverageFunction
         out = spmm_fn.apply(rows, cols, size, mat)
         print(out)
 
@@ -107,6 +116,9 @@ class TestSPMM(unittest.TestCase):
         loss.backward()
         print(mat.grad)
         self.assertTrue(gradcheck(spmm_fn, (rows, cols, size, mat)))
+
+        if not torch.cuda.is_available():
+            return
 
         rows = rows.cuda()
         cols = cols.cuda()
@@ -127,7 +139,7 @@ class TestSPMM(unittest.TestCase):
         size = [2, 4]
         mat = torch.rand(4, 3).double()
         mat.requires_grad_()
-        spmm_fn = MinkowskiSPMMFunction()
+        spmm_fn = MinkowskiSPMMFunction
         out = spmm_fn.apply(rows, cols, vals, size, mat)
         print(out)
 

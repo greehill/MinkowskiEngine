@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#ifndef CPU_ONLY
+#if !defined(CPU_ONLY) && defined(__CUDACC__)
 #include <thrust/host_vector.h>
 #endif
 
@@ -47,7 +47,7 @@ struct timer {
         .count();
   }
 
-  std::chrono::system_clock::time_point m_start;
+  std::chrono::high_resolution_clock::time_point m_start;
 };
 
 template <typename T>
@@ -65,7 +65,7 @@ std::ostream &print_vector(std::ostream &out, const T &v) {
   return out;
 }
 
-#ifndef CPU_ONLY
+#if !defined(CPU_ONLY) && defined(__CUDACC__)
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const thrust::host_vector<T> &v) {
   return print_vector(out, v);

@@ -150,6 +150,8 @@ class SparseTensorTestCase(unittest.TestCase):
 
     def test_quantization_gpu(self):
         print(f"{self.__class__.__name__}: test_quantization_gpu")
+        if not is_cuda_available():
+            return
         coords, feats, labels = data_loader(nchannel=2)
         # create duplicate coords
         coords[0] = coords[1]

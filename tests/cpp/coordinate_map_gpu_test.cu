@@ -68,8 +68,8 @@ coordinate_map_batch_insert_test(const torch::Tensor &coordinates) {
   timer t;
 
   t.tic();
-  map.insert<false>(input_coordinates.begin(), // key begin
-                    input_coordinates.end());  // key end
+  (void)map.insert_and_map<false>(input_coordinates.begin(), // key begin
+                                  input_coordinates.end());  // key end
 
   return std::make_pair<size_type, double>(map.size(), t.toc());
 }
@@ -161,25 +161,22 @@ coordinate_map_batch_find_test(const torch::Tensor &coordinates,
   auto input_coordinates = coordinate_range<coordinate_type>(N, D, ptr);
   thrust::counting_iterator<uint32_t> iter{0};
 
-  map.insert<false>(input_coordinates.begin(), // key begin
-                    input_coordinates.end());  // key end
+  (void)map.insert_and_map<false>(input_coordinates.begin(), // key begin
+                                  input_coordinates.end());  // key end
 
   LOG_DEBUG("Map size", map.size());
   auto query_coordinates = coordinate_range<coordinate_type>(NQ, D, query_ptr);
 
   LOG_DEBUG("Find coordinates.");
-  auto const query_results =
+  auto query_results =
       map.find(query_coordinates.begin(), query_coordinates.end());
-  auto const &firsts(query_results.first);
-  auto const &seconds(query_results.second);
+  auto &firsts(query_results.first);
+  auto &seconds(query_results.second);
   index_type NR = firsts.size();
   LOG_DEBUG(NR, "keys found.");
 
-  std::vector<index_type> cpu_firsts(NR);
-  std::vector<index_type> cpu_seconds(NR);
-
-  THRUST_CHECK(thrust::copy(firsts.cbegin(), firsts.cend(), cpu_firsts.begin()));
-  THRUST_CHECK(thrust::copy(seconds.cbegin(), seconds.cend(), cpu_seconds.begin()));
+  auto cpu_firsts = firsts.to_vector();
+  auto cpu_seconds = seconds.to_vector();
   return std::make_pair(cpu_firsts, cpu_seconds);
 }
 
@@ -219,8 +216,8 @@ coordinate_map_stride_test(const torch::Tensor &coordinates,
 
   auto input_coordinates = coordinate_range<coordinate_type>(N, D, ptr);
   thrust::counting_iterator<uint32_t> iter{0};
-  map.insert<false>(input_coordinates.begin(), // key begin
-                    input_coordinates.end());  // key end
+  (void)map.insert_and_map<false>(input_coordinates.begin(), // key begin
+                                  input_coordinates.end());  // key end
 
   // Stride
   default_types::stride_type stride_vec(NS);

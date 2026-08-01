@@ -52,7 +52,7 @@ class TestPruning(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiPruningFunction()
+        fn = MinkowskiPruningFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -94,7 +94,7 @@ class TestPruning(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiPruningFunction()
+        fn = MinkowskiPruningFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -122,7 +122,7 @@ class TestPruning(unittest.TestCase):
         print(output)
 
         # Check backward
-        fn = MinkowskiPruningFunction()
+        fn = MinkowskiPruningFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -137,6 +137,8 @@ class TestPruning(unittest.TestCase):
         )
 
     def test_device(self):
+        if not torch.cuda.is_available():
+            return
         in_channels, D = 2, 2
         device = torch.device("cuda")
         coords, feats, labels = data_loader(in_channels, batch_size=1)
@@ -151,7 +153,7 @@ class TestPruning(unittest.TestCase):
         print(input)
         print(output)
 
-        fn = MinkowskiPruningFunction()
+        fn = MinkowskiPruningFunction
         self.assertTrue(
             gradcheck(
                 fn,
@@ -180,7 +182,7 @@ class TestPruning(unittest.TestCase):
             channels[1],
             kernel_size=3,
             stride=2,
-            generate_new_coords=True,
+            expand_coordinates=True,
             dimension=D,
         ).double()
         conv1 = MinkowskiConvolution(
@@ -191,7 +193,7 @@ class TestPruning(unittest.TestCase):
             channels[2],
             kernel_size=3,
             stride=2,
-            generate_new_coords=True,
+            expand_coordinates=True,
             dimension=D,
         ).double()
         conv2 = MinkowskiConvolution(

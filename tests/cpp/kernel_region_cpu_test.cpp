@@ -74,25 +74,21 @@ region_iterator_test(const torch::Tensor &coordinates,
       RegionType::HYPER_CUBE, D, tensor_stride.data(), s_kernel_size.data(),
       dilation.data());
 
-  std::vector<coordinate_type> lb(D), ub(D);
   std::vector<coordinate_type> tmp(D);
-  LOG_DEBUG(tmp.size(), tmp.capacity());
   std::vector<std::vector<coordinate_type>> all_regions;
 
   for (index_type i = 0; i < N; ++i) {
-    region.set_bounds(&ptr[i * D], lb.data(), ub.data(), tmp.data());
-    for (auto const &coordinate : region) {
-      std::cout << PtrToString(coordinate.data(), D) << "\n";
-      std::vector<coordinate_type> vec_coordinate(D);
-      std::copy_n(coordinate.data(), D, vec_coordinate.data());
-      all_regions.push_back(std::move(vec_coordinate));
+    for (index_type kernel_index = 0; kernel_index < region.volume();
+         ++kernel_index) {
+      region.coordinate_at(kernel_index, &ptr[i * D], tmp.data());
+      all_regions.emplace_back(tmp.cbegin(), tmp.cend());
     }
   }
 
   return all_regions;
 }
 
-std::tuple<cpu_kernel_map, size_type, double>
+std::tuple<std::pair<cpu_in_maps, cpu_out_maps>, size_type, double>
 kernel_map_test(const torch::Tensor &in_coordinates,
                 const torch::Tensor &out_coordinates,
                 const torch::Tensor &kernel_size) {
@@ -131,14 +127,8 @@ kernel_map_test(const torch::Tensor &in_coordinates,
   CoordinateMapCPU<coordinate_type> in_map{N_in, D};
   CoordinateMapCPU<coordinate_type> out_map{N_out, D};
 
-  auto in_coordinate_range = coordinate_range<coordinate_type>(N_in, D, ptr);
-  simple_range iter_in{N_in};
-  in_map.insert(ptr,
-                ptr + N_in * D);
+  in_map.insert(ptr, ptr + N_in * D);
 
-  auto out_coordinate_range =
-      coordinate_range<coordinate_type>(N_out, D, ptr_out);
-  simple_range iter_out{N_out};
   out_map.insert(ptr_out, ptr_out + N_out * D);
 
   LOG_DEBUG("coordinate initialization");
@@ -163,7 +153,9 @@ kernel_map_test(const torch::Tensor &in_coordinates,
   t.tic();
   auto result = in_map.kernel_map(out_map, region);
 
-  return std::make_tuple(result, out_map.size(), t.toc());
+  return std::make_tuple(
+      std::make_pair(std::move(result.first), std::move(result.second)),
+      out_map.size(), t.toc());
 }
 
 } // namespace minkowski

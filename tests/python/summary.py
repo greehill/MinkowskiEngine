@@ -21,10 +21,9 @@
 # Please cite "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
+
 import unittest
-import open3d as o3d
 import numpy as np
-import os
 
 import torch
 import torch.nn as nn
@@ -32,6 +31,7 @@ import torch.nn as nn
 import MinkowskiEngine as ME
 from MinkowskiEngine import SparseTensor
 from MinkowskiEngine.utils import summary, batched_coordinates
+from tests.python.common import load_file
 
 
 class StackUNet(ME.MinkowskiNetwork):
@@ -90,18 +90,11 @@ class StackUNet(ME.MinkowskiNetwork):
 
 
 class TestSummary(unittest.TestCase):
-
     def setUp(self):
-        file_name, voxel_size = "1.ply", 0.02
+        voxel_size = 0.02
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.net = StackUNet(3, 20, D=3).to(self.device)
-        if not os.path.isfile(file_name):
-            print('Downloading an example pointcloud...')
-            urlretrieve("https://bit.ly/3c2iLhg", file_name)
-
-        pcd = o3d.io.read_point_cloud(file_name)
-        coords = np.array(pcd.points)
-        colors = np.array(pcd.colors)
+        coords, colors, _ = load_file("1.ply")
 
         self.sinput = SparseTensor(
             features=torch.from_numpy(colors).float(),
@@ -111,4 +104,3 @@ class TestSummary(unittest.TestCase):
 
     def test(self):
         summary(self.net, self.sinput)
-        

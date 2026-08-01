@@ -29,25 +29,23 @@
 
 #include <cusparse.h>
 
+#include <ATen/core/Tensor.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <ATen/cuda/CUDAUtils.h>
 #include <c10/cuda/CUDACachingAllocator.h>
 #include <torch/extension.h>
 #include <torch/script.h>
 
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
+#include <thrust/reduce.h>
+#include <thrust/sort.h>
+#include <thrust/tuple.h>
+
 namespace minkowski {
 
 #define BLOCK_SIZE 128
-
-template <typename Itype, typename Dtype>
-__global__ void
-unique_row2num_nonzero(const int n, Dtype *__restrict__ d_num_nonzero,
-                       const Itype *__restrict__ unique_row_ptr,
-                       const Dtype *__restrict__ reduced_val_ptr) {
-  CUDA_KERNEL_LOOP(index, n) {
-    d_num_nonzero[unique_row_ptr[index]] = reduced_val_ptr[index];
-  }
-}
 
 template <typename Itype, typename Dtype>
 __global__ void inverse_val(const int n, Dtype *__restrict__ d_sorted_val,

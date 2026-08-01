@@ -23,7 +23,8 @@
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
 import math
-from collections import Sequence, namedtuple
+from collections import namedtuple
+from collections.abc import Sequence
 from functools import reduce
 import numpy as np
 from typing import Union
@@ -87,6 +88,9 @@ def get_kernel_volume(region_type, kernel_size, region_offset, axis_types, dimen
     #             kernel_volume += curr_kernel_size - 1
 
     elif region_type == RegionType.CUSTOM:
+        assert isinstance(
+            region_offset, torch.Tensor
+        ), "region_offset must be a torch.Tensor."
         assert (
             region_offset.numel() > 0
         ), "region_offset must be non empty when region_type is CUSTOM"
@@ -229,9 +233,9 @@ def convert_region_type(
             region_offset.size(1) == dimension
         ), "region_offset must have the same dimension as the network"
         kernel_volume = int(region_offset.size(0))
-        assert isinstance(
-            region_offset.dtype, torch.IntTensor
-        ), "region_offset must be a torch.IntTensor."
+        assert (
+            region_offset.dtype == torch.int32
+        ), "region_offset must have dtype torch.int32."
     else:
         raise NotImplementedError()
 
@@ -297,7 +301,11 @@ class KernelGenerator:
         self.kernel_stride = kernel_stride
         self.kernel_dilation = kernel_dilation
         self.region_type = region_type
-        self.region_offsets = region_offsets if region_offsets else torch.IntTensor()
+        self.region_offsets = (
+            region_offsets.contiguous()
+            if region_offsets is not None
+            else torch.IntTensor()
+        )
         self.axis_types = axis_types
         self.dimension = dimension
         self.kernel_volume = get_kernel_volume(
@@ -387,8 +395,13 @@ def save_ctx(
     out_coords_key: CoordinateMapKey,
     coordinate_manager: CoordinateManager,
 ):
-    ctx.kernel_generator = kernel_generator
+    ctx.kernel_size = kernel_generator.kernel_size
+    ctx.kernel_stride = kernel_generator.kernel_stride
+    ctx.kernel_dilation = kernel_generator.kernel_dilation
+    ctx.region_type = kernel_generator.region_type
     ctx.in_coordinate_map_key = in_coords_key
     ctx.out_coordinate_map_key = out_coords_key
-    ctx.coordinate_manager = coordinate_manager
+    ctx.coordinate_manager = (
+        coordinate_manager._manager if coordinate_manager is not None else None
+    )
     return ctx

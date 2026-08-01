@@ -21,12 +21,10 @@
 # Please cite "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
-import torch
-
-assert torch.__version__ >= "1.7.0", "Gradcheck requires pytorch 1.7 or higher"
+import inspect
+from typing import Callable, Union
 
 from torch.types import _TensorOrTensors
-from typing import Callable, Union, Optional
 
 from torch.autograd.gradcheck import gradcheck as _gradcheck
 
@@ -43,15 +41,19 @@ def gradcheck(
     check_undefined_grad: bool = True,
     check_grad_dtypes: bool = False,
 ) -> bool:
-    return _gradcheck(
-        lambda *x: func.apply(*x),
-        inputs,
-        eps=eps,
-        atol=atol,
-        rtol=rtol,
-        raise_exception=raise_exception,
-        check_sparse_nnz=check_sparse_nnz,
-        nondet_tol=nondet_tol,
-        check_undefined_grad=check_undefined_grad,
-        check_grad_dtypes=check_grad_dtypes,
-    )
+    kwargs = {
+        "eps": eps,
+        "atol": atol,
+        "rtol": rtol,
+        "raise_exception": raise_exception,
+        "check_sparse_nnz": check_sparse_nnz,
+        "nondet_tol": nondet_tol,
+        "check_undefined_grad": check_undefined_grad,
+        "check_grad_dtypes": check_grad_dtypes,
+    }
+    supported_kwargs = inspect.signature(_gradcheck).parameters
+    filtered_kwargs = {
+        key: value for key, value in kwargs.items() if key in supported_kwargs
+    }
+    gradcheck_target = func.apply if hasattr(func, "apply") else func
+    return _gradcheck(gradcheck_target, inputs, **filtered_kwargs)

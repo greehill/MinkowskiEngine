@@ -61,6 +61,8 @@ class TestUnion(unittest.TestCase):
         self.assertTrue(torch.prod(input2.F.grad) == 1)
 
     def test_union_gpu(self):
+        if not torch.cuda.is_available():
+            return
         device = torch.device("cuda")
 
         coords1 = torch.IntTensor([[0, 0], [0, 1]])
