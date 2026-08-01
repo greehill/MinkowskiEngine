@@ -1,7 +1,7 @@
 name: GPU CI
 
 on:
-  pull_request:
+  pull_request_target:
   push:
     branches:
       - master
@@ -106,10 +106,10 @@ jobs:
           reason = ""
           selected_entries = []
 
-          if event_name == "pull_request" and pr_head_repository != event_repository:
+          if event_name == "pull_request_target" and pr_head_repository != event_repository:
               reason = "GPU CI does not run fork pull requests on self-hosted runners."
           elif event_name != "workflow_dispatch" and not gpu_ci_enabled:
-              reason = "GPU CI is disabled. Set MINKOWSKI_GPU_CI_ENABLED=true to run it on push and pull_request."
+              reason = "GPU CI is disabled. Set MINKOWSKI_GPU_CI_ENABLED=true to run it on pushes and pull requests."
           elif not configured_labels:
               source = "workflow input `runner_labels`" if event_name == "workflow_dispatch" else "repo variable `MINKOWSKI_GPU_RUNNER_LABELS`"
               reason = f"No CUDA runner labels were configured via {source}."
@@ -164,6 +164,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-python@v5
         with:
