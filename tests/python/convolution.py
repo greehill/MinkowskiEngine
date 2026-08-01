@@ -653,10 +653,63 @@ class TestGenerativeConvolutionTranspose(unittest.TestCase):
         )
 
     def test_generate_new_coords_alias(self):
+        conv = MinkowskiConvolution(
+            2, 2, kernel_size=3, stride=2, generate_new_coords=True, dimension=2
+        )
+        self.assertTrue(conv.kernel_generator.expand_coordinates)
+
         conv_tr = MinkowskiConvolutionTranspose(
             2, 2, kernel_size=3, stride=2, generate_new_coords=True, dimension=2
         )
         self.assertTrue(conv_tr.kernel_generator.expand_coordinates)
+
+    def test_deprecated_alias_preserves_positional_constructor_arguments(self):
+        conv = MinkowskiConvolution(
+            2, 2, 3, 1, 1, False, None, False, _C.ConvolutionMode.DEFAULT, 2
+        )
+        conv_tr = MinkowskiConvolutionTranspose(
+            2, 2, 3, 1, 1, False, None, False, _C.ConvolutionMode.DEFAULT, 2
+        )
+        generative = MinkowskiGenerativeConvolutionTranspose(
+            2, 2, 3, 1, 1, False, None, _C.ConvolutionMode.DEFAULT, 2
+        )
+
+        self.assertEqual(conv.dimension, 2)
+        self.assertEqual(conv_tr.dimension, 2)
+        self.assertEqual(generative.dimension, 2)
+
+    def test_custom_kernel_offsets(self):
+        coordinates = torch.IntTensor([[0, 0, 0], [0, 1, 0], [0, 2, 0]])
+        features = torch.DoubleTensor([[1], [2], [4]])
+        kernel_generator = KernelGenerator(
+            kernel_size=-1,
+            region_type=_C.RegionType.CUSTOM,
+            region_offsets=torch.IntTensor([[0, 0], [1, 0]]),
+            dimension=2,
+        )
+
+        for device in ["cpu"] + (["cuda"] if torch.cuda.is_available() else []):
+            with self.subTest(device=device):
+                conv = MinkowskiConvolution(
+                    1,
+                    1,
+                    kernel_generator=kernel_generator,
+                    bias=False,
+                    dimension=2,
+                ).double().to(device)
+                with torch.no_grad():
+                    conv.kernel.copy_(torch.DoubleTensor([[[1]], [[10]]]).to(device))
+
+                sparse_input = SparseTensor(
+                    features.to(device), coordinates=coordinates.to(device)
+                )
+                output = conv(sparse_input)
+
+                self.assertTrue(
+                    torch.equal(
+                        output.F.cpu(), torch.DoubleTensor([[21], [42], [4]])
+                    )
+                )
 
 
 class TestChannelwiseConvolution(unittest.TestCase):

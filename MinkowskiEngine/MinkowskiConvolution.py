@@ -400,9 +400,9 @@ class MinkowskiConvolution(MinkowskiConvolutionBase):
         bias=False,
         kernel_generator=None,
         expand_coordinates=False,
-        generate_new_coords=None,
         convolution_mode=ConvolutionMode.DEFAULT,
         dimension=None,
+        generate_new_coords=None,
     ):
         r"""convolution on a sparse tensor
 
@@ -445,6 +445,9 @@ class MinkowskiConvolution(MinkowskiConvolutionBase):
             in a 2D space, meshes and 3D shapes are in a 3D space.
 
         """
+        expand_coordinates = _resolve_expand_coordinates(
+            expand_coordinates, generate_new_coords, self.__class__.__name__
+        )
         MinkowskiConvolutionBase.__init__(
             self,
             in_channels,
@@ -475,9 +478,9 @@ class MinkowskiConvolutionTranspose(MinkowskiConvolutionBase):
         bias=False,
         kernel_generator=None,
         expand_coordinates=False,
-        generate_new_coords=None,
         convolution_mode=ConvolutionMode.DEFAULT,
         dimension=None,
+        generate_new_coords=None,
     ):
         r"""a generalized sparse transposed convolution layer.
 
@@ -565,9 +568,9 @@ class MinkowskiGenerativeConvolutionTranspose(MinkowskiConvolutionBase):
         dilation=1,
         bias=False,
         kernel_generator=None,
-        generate_new_coords=None,
         convolution_mode=ConvolutionMode.DEFAULT,
         dimension=None,
+        generate_new_coords=None,
     ):
         r"""a generalized sparse transposed convolution layer that creates new coordinates.
 

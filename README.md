@@ -108,7 +108,7 @@ cd MinkowskiEngine
 uv venv .venv --python 3.12
 source .venv/bin/activate
 
-uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
 uv pip install --python .venv/bin/python "torch==2.10.0" \
   --index-url https://download.pytorch.org/whl/cpu
 uv pip install --python .venv/bin/python numpy ninja
@@ -134,7 +134,7 @@ cd MinkowskiEngine
 uv venv .venv --python 3.12
 source .venv/bin/activate
 
-uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
 uv pip install --python .venv/bin/python "torch==2.10.0" \
   --index-url https://download.pytorch.org/whl/cu128
 uv pip install --python .venv/bin/python numpy ninja
@@ -171,7 +171,7 @@ The build now uses environment variables instead of `setup.py install` flags:
 
 ### API compatibility notes
 
-- `MinkowskiConvolutionTranspose` and `MinkowskiGenerativeConvolutionTranspose` still accept `generate_new_coords`, but it is now a deprecated alias for `expand_coordinates`
+- Convolution modules still accept `generate_new_coords`, but it is now a deprecated alias for `expand_coordinates`
 - Point-cloud tests use the tracked fixture at `tests/data/1.ply`; they no longer download data at import time
 
 ### C++ test extensions

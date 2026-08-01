@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
           uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}" \
             --index-url https://download.pytorch.org/whl/cpu
           uv pip install --python .venv/bin/python numpy ninja
@@ -101,7 +101,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
           uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}" \
             --index-url https://download.pytorch.org/whl/cpu
           uv pip install --python .venv/bin/python numpy ninja
@@ -142,7 +142,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
+          uv pip install --python .venv/bin/python "setuptools>=77" wheel packaging
           uv pip install --python .venv/bin/python "torch==${{ matrix.torch-version }}"
           uv pip install --python .venv/bin/python numpy ninja
 

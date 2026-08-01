@@ -29,14 +29,18 @@ import MinkowskiEngine as ME
 from MinkowskiCommon import convert_to_int_list
 import examples.minkunet as UNets
 from tests.python.common import (
-    DEFAULT_PLY_PATH,
     batched_coordinates,
     load_file as load_point_cloud,
 )
 from examples.common import Timer
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--file_name", type=str, default=str(DEFAULT_PLY_PATH))
+parser.add_argument(
+    "--file_name",
+    type=str,
+    required=True,
+    help="Representative point cloud used for performance measurements.",
+)
 parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--use_cpu", action="store_true")
 parser.add_argument("--backward", action="store_true")

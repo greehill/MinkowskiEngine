@@ -240,9 +240,14 @@ public:
     }
     break;
 
-    case RegionType::CUSTOM:
-      // TODO
-      break;
+    case RegionType::CUSTOM: {
+      auto const offset_start = kernel_index * (m_coordinate_size - 1);
+      for (index_type i = 0; i < m_coordinate_size - 1; ++i) {
+        dst_coordinate[i + 1] =
+            src_coordinate[i + 1] + m_offset[offset_start + i];
+      }
+    }
+    break;
     }
   }
 
