@@ -86,29 +86,6 @@ MAIN_SOURCE_SETS = {
     ),
 }
 CPP_TEST_SOURCE_SETS = {
-    "convolution_cpu": (
-        CppExtension,
-        ("convolution_test.cpp",),
-        (
-            "math_functions_cpu.cpp",
-            "coordinate_map_manager.cpp",
-            "convolution_cpu.cpp",
-        ),
-        ("-DCPU_ONLY",),
-    ),
-    "convolution_gpu": (
-        CUDAExtension,
-        ("convolution_test.cu",),
-        (
-            "math_functions_cpu.cpp",
-            "math_functions_gpu.cu",
-            "coordinate_map_manager.cu",
-            "convolution_gpu.cu",
-            "coordinate_map_gpu.cu",
-            "convolution_kernel.cu",
-        ),
-        (),
-    ),
     "coordinate_map_manager_cpu": (
         CppExtension,
         ("coordinate_map_manager_cpu_test.cpp",),
