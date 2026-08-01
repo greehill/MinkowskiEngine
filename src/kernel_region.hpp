@@ -235,11 +235,11 @@ public:
       }
       auto const r = (m_kernel_size[axis] - 1) / 2;
       coordinate_type coord_offset = (ind < r) ? (ind + 1) : (ind - 2 * r);
-      dst_coordinate[axis + 1] += coord_offset * m_dilation[axis] * 
+      dst_coordinate[axis + 1] += coord_offset * m_dilation[axis] *
                   m_tensor_stride[axis];
     }
     break;
-    
+
     case RegionType::CUSTOM:
       // TODO
       break;

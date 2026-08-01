@@ -8,17 +8,21 @@ run_test() {
   local target="$1"
   local module="$2"
   local mode="${3:-cpu}"
+  local build_root="build/cpp-tests/${target}"
 
   if [[ "$mode" == "gpu" ]]; then
     MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS="$MINKOWSKI_BLAS" \
-      uv pip install --python "$PYTHON_BIN" --no-build-isolation -v ./tests/cpp \
-      --config-setting="--test=${target}"
+      uv run --no-sync --python "$PYTHON_BIN" python tests/cpp/setup.py \
+      "--test=${target}" --nodebug build_ext \
+      --build-temp "${build_root}/temp" --build-lib "${build_root}/lib"
   else
     MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS="$MINKOWSKI_BLAS" \
-      uv pip install --python "$PYTHON_BIN" --no-build-isolation -v ./tests/cpp \
-      --config-setting="--test=${target}"
+      uv run --no-sync --python "$PYTHON_BIN" python tests/cpp/setup.py \
+      "--test=${target}" --nodebug build_ext \
+      --build-temp "${build_root}/temp" --build-lib "${build_root}/lib"
   fi
-  uv run --no-sync --python "$PYTHON_BIN" python -m unittest "$module"
+  PYTHONPATH="${PWD}/${build_root}/lib:${PWD}/tests/cpp:${PWD}" \
+    uv run --no-sync --python "$PYTHON_BIN" python -m unittest "tests.cpp.${module}"
 }
 
 run_test coordinate coordinate_test

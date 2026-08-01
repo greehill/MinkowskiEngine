@@ -61,14 +61,14 @@ Validated source-build targets in this repository:
 
 - Python `3.10` to `3.14`
 - PyTorch `2.5` to `2.10`
-- Linux `x86_64` CUDA builds against official PyTorch wheel channels `cu124`, `cu126`, `cu128`, and `cu130`
+- Linux `x86_64` CUDA 12 source builds, with this release directly validated on `cu128`
 - Linux and macOS CPU-only builds
 
 Current limits:
 
 - Python `3.14` is validated with PyTorch `2.9` and `2.10`
 - Windows is out of scope in this pass
-- CUDA `13.1` is not claimed yet. Wait for an official PyTorch `cu131` wheel channel before treating it as supported
+- CUDA 13 is not certified by this release and remains separate follow-up work
 
 ## Requirements
 
@@ -100,7 +100,8 @@ brew install openblas libomp
 Shared steps:
 
 ```bash
-git clone https://github.com/greehill/MinkowskiEngine.git
+git clone --branch v0.6.0+greehill.1 --depth 1 \
+  https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.12
@@ -119,40 +120,40 @@ MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
 
 Use Linux `x86_64`, install a CUDA toolkit that matches the PyTorch wheel channel you selected, and point `CUDA_HOME` at that toolkit.
 
-Example for PyTorch `2.10.0` with CUDA `13.0` wheels:
+Validated release example for PyTorch `2.10.0` with CUDA `12.8` wheels:
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y build-essential libopenblas-dev
 
-git clone https://github.com/greehill/MinkowskiEngine.git
+git clone --branch v0.6.0+greehill.1 --depth 1 \
+  https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
-uv venv .venv --python 3.13
+uv venv .venv --python 3.12
 source .venv/bin/activate
 
 uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
 uv pip install --python .venv/bin/python "torch==2.10.0" \
-  --index-url https://download.pytorch.org/whl/cu130
+  --index-url https://download.pytorch.org/whl/cu128
 uv pip install --python .venv/bin/python numpy ninja
 
-export CUDA_HOME=/usr/local/cuda-13.0
+export CUDA_HOME=/usr/local/cuda-12.8
 MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
   uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
 
-PyTorch release notes determine which wheel channel is valid for a given release. The repository CI validates representative official combinations:
+PyTorch release notes determine which wheel channel is valid for a given release. The opt-in GPU workflow defines these CUDA 12 combinations; the `cu128` TSE lane has direct release evidence:
 
 - `torch 2.5` on `cu124`
 - `torch 2.6` on `cu126`
 - `torch 2.7` on `cu128`
-- `torch 2.9` on `cu130`
-- `torch 2.10` on `cu130`
+- `torch 2.10` on `cu128`
 
 The GPU workflow uses self-hosted NVIDIA runners. On push and pull request runs it is
 opt-in: set repository variable `MINKOWSKI_GPU_CI_ENABLED=true` and define
 `MINKOWSKI_GPU_RUNNER_LABELS` as a comma-separated label list such as
-`cuda-12-8,cuda-13-0`. Without that configuration, GPU CI skips cleanly instead of
+`cuda-12-6,cuda-12-8`. Without that configuration, GPU CI skips cleanly instead of
 remaining queued. Manual `workflow_dispatch` runs can pass `runner_labels` directly.
 
 ### Build environment variables
@@ -252,7 +253,7 @@ page](http://nvidia.github.io/MinkowskiEngine/) for more detail.
 
 For issues not listed on the API and feature requests, feel free to submit
 an issue on the [github issue
-page](https://github.com/NVIDIA/MinkowskiEngine/issues).
+page](https://github.com/greehill/MinkowskiEngine/issues).
 
 
 ## Known Issues
@@ -281,7 +282,7 @@ Specifically, pytorch caches chunks of memory spaces to speed up allocation used
 
 ### Matching CUDA and PyTorch
 
-Make sure the installed PyTorch wheel channel and the local CUDA toolkit match. For example, a `cu130` torch install should build against a CUDA `13.0` toolkit exposed through `CUDA_HOME`.
+Make sure the installed PyTorch wheel channel and the local CUDA toolkit match. For example, a `cu128` torch install should build against a CUDA `12.8` toolkit exposed through `CUDA_HOME`.
 
 ### Running the MinkowskiEngine on nodes with a large number of CPUs
 

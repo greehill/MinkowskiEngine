@@ -27,10 +27,12 @@ from pathlib import Path
 from unittest import mock
 
 from build_helpers import (
+    BlasConfig,
     _configure_macos_platform_environment,
     _macos_llvm_runtime_library_dirs,
     _macos_openmp_flags,
     _normalized_macos_deployment_target,
+    build_cpp_test_extension,
     resolve_cuda_build_enabled,
 )
 from tests.python.common import DEFAULT_PLY_PATH
@@ -48,6 +50,21 @@ class TestBuildConfig(unittest.TestCase):
         self.assertTrue(
             resolve_cuda_build_enabled("linux", False, True, "12.8", "/usr/local/cuda")
         )
+
+    def test_conflicting_cuda_build_flags_fail(self):
+        with self.assertRaisesRegex(RuntimeError, "mutually exclusive"):
+            resolve_cuda_build_enabled("linux", True, True, "12.8", "/usr/local/cuda")
+
+    def test_cpp_test_extension_uses_absolute_source_paths(self):
+        blas = BlasConfig("openblas", ("openblas",), (), (), (), ())
+        with mock.patch("build_helpers.detect_blas_config", return_value=blas), mock.patch(
+            "build_helpers._common_compile_and_link_args",
+            return_value=([], [], [], [], []),
+        ):
+            extension = build_cpp_test_extension("coordinate", debug=False)[0]
+
+        self.assertTrue(extension.sources)
+        self.assertTrue(all(Path(source).is_absolute() for source in extension.sources))
 
     def test_local_point_cloud_fixture_exists(self):
         self.assertTrue(DEFAULT_PLY_PATH.is_file(), DEFAULT_PLY_PATH)

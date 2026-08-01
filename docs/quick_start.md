@@ -4,13 +4,13 @@
 
 - Python `3.10` to `3.14`
 - PyTorch `2.5` to `2.10`
-- Linux `x86_64` CUDA source builds for official PyTorch channels `cu124`, `cu126`, `cu128`, and `cu130`
+- Linux `x86_64` CUDA 12 source builds, with this release directly validated on `cu128`
 - Linux and macOS CPU-only source builds
 
 Notes:
 
 - Python `3.14` is validated with PyTorch `2.9` and `2.10`
-- CUDA `13.1` is not supported in this repository yet
+- CUDA 13 is not certified by this release
 
 ## Install with `uv`
 
@@ -19,7 +19,8 @@ Install PyTorch first, then build MinkowskiEngine from source with `uv`.
 CPU-only:
 
 ```bash
-git clone https://github.com/greehill/MinkowskiEngine.git
+git clone --branch v0.6.0+greehill.1 --depth 1 \
+  https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
 uv venv .venv --python 3.12
@@ -37,18 +38,19 @@ MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
 CUDA on Linux `x86_64`:
 
 ```bash
-git clone https://github.com/greehill/MinkowskiEngine.git
+git clone --branch v0.6.0+greehill.1 --depth 1 \
+  https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
 
-uv venv .venv --python 3.13
+uv venv .venv --python 3.12
 source .venv/bin/activate
 
 uv pip install --python .venv/bin/python "setuptools>=69" wheel packaging
 uv pip install --python .venv/bin/python "torch==2.10.0" \
-  --index-url https://download.pytorch.org/whl/cu130
+  --index-url https://download.pytorch.org/whl/cu128
 uv pip install --python .venv/bin/python numpy ninja
 
-export CUDA_HOME=/usr/local/cuda-13.0
+export CUDA_HOME=/usr/local/cuda-12.8
 MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
   uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```

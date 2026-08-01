@@ -353,6 +353,10 @@ def resolve_cuda_build_enabled(
     torch_cuda_version: str | None,
     cuda_home: str | None,
 ) -> bool:
+    if cpu_only and force_cuda:
+        raise RuntimeError(
+            "MINKOWSKI_CPU_ONLY=1 and MINKOWSKI_FORCE_CUDA=1 are mutually exclusive."
+        )
     if cpu_only:
         return False
     if system_name == "darwin":
@@ -640,8 +644,10 @@ def build_cpp_test_extension(test_target: str, debug: bool):
     _finalize_parallelism()
 
     test_root = ROOT / "tests" / "cpp"
-    sources = _relative_source_paths(test_root, test_files)
-    sources.extend(_relative_source_paths(SRC_PATH, source_files))
+    # C++ tests are built from tests/cpp/setup.py, so repo-root-relative paths
+    # are interpreted from the wrong project directory by build frontends.
+    sources = [str(test_root / filename) for filename in test_files]
+    sources.extend(str(SRC_PATH / filename) for filename in source_files)
     return [
         extension_cls(
             name="MinkowskiEngineTest._C",

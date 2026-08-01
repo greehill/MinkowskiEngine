@@ -8,7 +8,7 @@
 - Add compatibility fixes for current PyTorch and CUDA toolchains.
 - Add deterministic local point-cloud fixtures for offline tests.
 - Add Linux and macOS CPU validation plus opt-in Linux GPU validation,
-  including the TSE Python 3.12, PyTorch 2.10, cu126 release lane.
+  including the TSE Python 3.12, PyTorch 2.10, cu128 release lane.
 
 ## [0.5.5]
 

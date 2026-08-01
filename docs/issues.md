@@ -2,7 +2,7 @@
 
 ## `CUDA_HOME` points at the wrong toolkit
 
-MinkowskiEngine must build against the same CUDA major/minor version exposed by the installed PyTorch wheel channel. If torch was installed from `cu130`, then `CUDA_HOME` should point at a CUDA `13.0` toolkit.
+MinkowskiEngine must build against the same CUDA major/minor version exposed by the installed PyTorch wheel channel. If torch was installed from `cu128`, then `CUDA_HOME` should point at a CUDA `12.8` toolkit.
 
 Check the current value:
 
@@ -18,7 +18,7 @@ PY
 If `CUDA_HOME` is wrong, export the correct toolkit path and rebuild:
 
 ```bash
-export CUDA_HOME=/usr/local/cuda-13.0
+export CUDA_HOME=/usr/local/cuda-12.8
 MINKOWSKI_FORCE_CUDA=1 MINKOWSKI_BLAS=openblas \
   uv pip install --python .venv/bin/python --no-build-isolation -v .
 ```
@@ -64,11 +64,11 @@ Install a torch build whose wheel channel matches the toolkit used for compilati
 
 ```bash
 uv pip install --python .venv/bin/python "torch==2.10.0" \
-  --index-url https://download.pytorch.org/whl/cu130
-export CUDA_HOME=/usr/local/cuda-13.0
+  --index-url https://download.pytorch.org/whl/cu128
+export CUDA_HOME=/usr/local/cuda-12.8
 ```
 
-CUDA `13.1` should not be used with this repository until official PyTorch `cu131` wheels exist.
+CUDA 13 is not certified by this release and should be evaluated separately.
 
 ## GPU out-of-memory during training
 
@@ -86,4 +86,4 @@ def training(...):
 
 ## Issues not listed
 
-If you still hit an install or runtime issue, open an issue on the [MinkowskiEngine GitHub page](https://github.com/NVIDIA/MinkowskiEngine/issues).
+If you still hit an install or runtime issue, open an issue on the [Greehill MinkowskiEngine fork](https://github.com/greehill/MinkowskiEngine/issues).
