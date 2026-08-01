@@ -75,6 +75,7 @@ Current limits:
 - A matching PyTorch install must exist before building MinkowskiEngine
 - `ninja`
 - A BLAS implementation, typically `openblas`
+- `pkg-config` for reliable BLAS discovery on Linux
 - Linux: a C++17 compiler toolchain and the CUDA toolkit when building with GPU support
 - macOS: CPU-only builds, with Homebrew `openblas` and `libomp`
 
@@ -88,7 +89,7 @@ Linux:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential libopenblas-dev
+sudo apt-get install -y build-essential libopenblas-dev pkg-config
 ```
 
 macOS:
@@ -124,7 +125,7 @@ Validated release example for PyTorch `2.10.0` with CUDA `12.8` wheels:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential libopenblas-dev
+sudo apt-get install -y build-essential libopenblas-dev pkg-config
 
 git clone --branch v0.6.0+greehill.1 --depth 1 \
   https://github.com/greehill/MinkowskiEngine.git

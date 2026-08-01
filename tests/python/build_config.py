@@ -22,6 +22,7 @@
 # Networks", CVPR'19 (https://arxiv.org/abs/1904.08755) if you use any part
 # of the code.
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -33,6 +34,7 @@ from build_helpers import (
     _macos_openmp_flags,
     _normalized_macos_deployment_target,
     build_cpp_test_extension,
+    detect_blas_config,
     resolve_cuda_build_enabled,
 )
 from tests.python.common import DEFAULT_PLY_PATH
@@ -65,6 +67,34 @@ class TestBuildConfig(unittest.TestCase):
 
         self.assertTrue(extension.sources)
         self.assertTrue(all(Path(source).is_absolute() for source in extension.sources))
+
+    def test_blas_fallback_finds_linux_multiarch_library(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            prefix = Path(temp_dir)
+            library_dir = prefix / "lib" / "x86_64-linux-gnu"
+            library_dir.mkdir(parents=True)
+            (library_dir / "libopenblas.so").touch()
+            include_dir = prefix / "include"
+            include_dir.mkdir()
+            (include_dir / "cblas.h").touch()
+
+            with (
+                mock.patch.dict(
+                    "os.environ", {"MINKOWSKI_BLAS": "openblas"}, clear=True
+                ),
+                mock.patch("build_helpers._run_pkg_config", return_value=None),
+                mock.patch(
+                    "build_helpers._candidate_prefixes", return_value=[prefix]
+                ),
+                mock.patch(
+                    "build_helpers.sysconfig.get_config_var",
+                    return_value="x86_64-linux-gnu",
+                ),
+            ):
+                config = detect_blas_config()
+
+        self.assertEqual(config.library_dirs, (str(library_dir),))
+        self.assertEqual(config.include_dirs, (str(include_dir),))
 
     def test_local_point_cloud_fixture_exists(self):
         self.assertTrue(DEFAULT_PLY_PATH.is_file(), DEFAULT_PLY_PATH)

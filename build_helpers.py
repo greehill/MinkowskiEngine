@@ -6,6 +6,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -239,7 +240,7 @@ def _header_candidates(prefix: Path) -> list[Path]:
 
 
 def _library_candidates(prefix: Path) -> list[Path]:
-    return [
+    candidates = [
         prefix / "lib",
         prefix / "lib64",
         prefix / "opt" / "openblas" / "lib",
@@ -247,6 +248,10 @@ def _library_candidates(prefix: Path) -> list[Path]:
         prefix / "lib" / "c++",
         prefix / "lib64" / "c++",
     ]
+    multiarch = sysconfig.get_config_var("MULTIARCH")
+    if multiarch:
+        candidates.insert(2, prefix / "lib" / multiarch)
+    return candidates
 
 
 def _find_library_dir(prefixes: Iterable[Path], lib_names: Iterable[str]) -> Path | None:

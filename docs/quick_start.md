@@ -19,6 +19,9 @@ Install PyTorch first, then build MinkowskiEngine from source with `uv`.
 CPU-only:
 
 ```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libopenblas-dev pkg-config
+
 git clone --branch v0.6.0+greehill.1 --depth 1 \
   https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine
@@ -38,6 +41,9 @@ MINKOWSKI_CPU_ONLY=1 MINKOWSKI_BLAS=openblas \
 CUDA on Linux `x86_64`:
 
 ```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libopenblas-dev pkg-config
+
 git clone --branch v0.6.0+greehill.1 --depth 1 \
   https://github.com/greehill/MinkowskiEngine.git
 cd MinkowskiEngine

@@ -27,7 +27,8 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     build-essential \
     ca-certificates \
     libopenblas-dev \
-    ninja-build
+    ninja-build \
+    pkg-config
 
 COPY --from=uv /uv /uvx /usr/local/bin/
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
