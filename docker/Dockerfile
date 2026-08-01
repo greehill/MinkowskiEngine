@@ -45,10 +45,17 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     "torch @ https://download-r2.pytorch.org/whl/cu128/torch-2.10.0%2Bcu128-cp312-cp312-manylinux_2_28_x86_64.whl#sha256=628e89bd5110ced7debee2a57c69959725b7fbc64eab81a39dd70e46c7e28ba5"
 
 WORKDIR /opt/MinkowskiEngine
-COPY . .
+COPY pyproject.toml setup.py build_helpers.py MANIFEST.in README.md LICENSE ./
+COPY MinkowskiEngine/ MinkowskiEngine/
+COPY pybind/ pybind/
+COPY src/ src/
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install --no-build-isolation --no-deps . && \
     uv pip check
+
+# Tests and documentation remain available in the release image without
+# invalidating native compilation when only those files change.
+COPY . .
 
 # CUDA 12 minor-version compatibility uses the host driver on driver 525+.
 # Do not let the base image's forward-compatibility libcuda shadow that driver.
