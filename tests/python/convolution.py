@@ -687,6 +687,8 @@ class TestGenerativeConvolutionTranspose(unittest.TestCase):
             region_offsets=torch.IntTensor([[0, 0], [1, 0]]),
             dimension=2,
         )
+        self.assertEqual(kernel_generator.kernel_size, [1, 1])
+        self.assertEqual(kernel_generator.kernel_volume, 2)
 
         for device in ["cpu"] + (["cuda"] if torch.cuda.is_available() else []):
             with self.subTest(device=device):

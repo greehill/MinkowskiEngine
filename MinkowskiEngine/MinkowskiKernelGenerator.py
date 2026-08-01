@@ -293,6 +293,9 @@ class KernelGenerator:
         assert isinstance(region_type, RegionType)
 
         kernel_size = convert_to_int_list(kernel_size, dimension)
+        if region_type == RegionType.CUSTOM:
+            # Custom offsets define the kernel; C++ still requires unsigned sizes.
+            kernel_size = [1] * dimension
         kernel_stride = convert_to_int_list(stride, dimension)
         kernel_dilation = convert_to_int_list(dilation, dimension)
 
