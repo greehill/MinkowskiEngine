@@ -27,6 +27,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import build_helpers
+
 from build_helpers import (
     BlasConfig,
     CPP_TEST_SOURCE_SETS,
@@ -150,12 +152,45 @@ class TestBuildConfig(unittest.TestCase):
         dockerfile = (ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("rm -rf /usr/local/cuda/compat", dockerfile)
 
-    def test_cpp_runner_overrides_inherited_cuda_mode(self):
-        runner = (ROOT / "tests" / "cpp" / "test_all.sh").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("MINKOWSKI_CPU_ONLY=0 MINKOWSKI_FORCE_CUDA=1", runner)
-        self.assertIn("MINKOWSKI_CPU_ONLY=1 MINKOWSKI_FORCE_CUDA=0", runner)
+    def test_cpp_test_target_controls_cuda_mode(self):
+        blas = BlasConfig("openblas", ("openblas",), (), (), (), ())
+        cpu_extension = mock.Mock(return_value="cpu-extension")
+        gpu_extension = mock.Mock(return_value="gpu-extension")
+        source_sets = {
+            "cpu-probe": (cpu_extension, (), (), ("-DCPU_ONLY",)),
+            "gpu-probe": (gpu_extension, (), (), ()),
+        }
+
+        with (
+            mock.patch.dict(
+                "os.environ",
+                {"MINKOWSKI_CPU_ONLY": "1", "MINKOWSKI_FORCE_CUDA": "1"},
+                clear=False,
+            ),
+            mock.patch.object(build_helpers, "CUDAExtension", gpu_extension),
+            mock.patch.dict(build_helpers.CPP_TEST_SOURCE_SETS, source_sets),
+            mock.patch("build_helpers.detect_blas_config", return_value=blas),
+            mock.patch(
+                "build_helpers._common_compile_and_link_args",
+                return_value=([], [], [], [], []),
+            ),
+            mock.patch(
+                "build_helpers.resolve_cuda_build_enabled", return_value=True
+            ) as resolve_cuda,
+        ):
+            self.assertEqual(
+                build_cpp_test_extension("cpu-probe", debug=False),
+                ["cpu-extension"],
+            )
+            resolve_cuda.assert_not_called()
+
+            self.assertEqual(
+                build_cpp_test_extension("gpu-probe", debug=False),
+                ["gpu-extension"],
+            )
+
+        self.assertEqual(resolve_cuda.call_count, 1)
+        self.assertEqual(resolve_cuda.call_args.args[1:3], (False, True))
 
     def test_macos_openmp_flags_for_apple_clang(self):
         compiler = Path("/usr/bin/clang++")
