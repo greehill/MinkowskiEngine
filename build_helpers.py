@@ -98,23 +98,38 @@ CPP_TEST_SOURCE_SETS = {
         ("coordinate_map_manager.cu", "coordinate_map_gpu.cu"),
         (),
     ),
-    "coordinate_map_key": (CppExtension, ("coordinate_map_key_test.cpp",), (), ()),
-    "coordinate_map_cpu": (CppExtension, ("coordinate_map_cpu_test.cpp",), (), ()),
+    "coordinate_map_key": (
+        CppExtension,
+        ("coordinate_map_key_test.cpp",),
+        (),
+        ("-DCPU_ONLY",),
+    ),
+    "coordinate_map_cpu": (
+        CppExtension,
+        ("coordinate_map_cpu_test.cpp",),
+        (),
+        ("-DCPU_ONLY",),
+    ),
     "coordinate_map_gpu": (
         CUDAExtension,
         ("coordinate_map_gpu_test.cu",),
         ("coordinate_map_gpu.cu",),
         (),
     ),
-    "coordinate": (CppExtension, ("coordinate_test.cpp",), (), ()),
-    "kernel_region_cpu": (CppExtension, ("kernel_region_cpu_test.cpp",), (), ()),
+    "coordinate": (CppExtension, ("coordinate_test.cpp",), (), ("-DCPU_ONLY",)),
+    "kernel_region_cpu": (
+        CppExtension,
+        ("kernel_region_cpu_test.cpp",),
+        (),
+        ("-DCPU_ONLY",),
+    ),
     "kernel_region_gpu": (
         CUDAExtension,
         ("kernel_region_gpu_test.cu",),
         ("coordinate_map_gpu.cu",),
         (),
     ),
-    "type": (CppExtension, ("type_test.cpp",), (), ()),
+    "type": (CppExtension, ("type_test.cpp",), (), ("-DCPU_ONLY",)),
 }
 
 

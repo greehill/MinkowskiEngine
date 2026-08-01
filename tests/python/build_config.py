@@ -82,6 +82,13 @@ class TestBuildConfig(unittest.TestCase):
                 missing = [str(path) for path in paths if not path.is_file()]
                 self.assertEqual(missing, [])
 
+    def test_cpu_cpp_test_targets_define_cpu_only(self):
+        for target, (extension, _, _, define_flags) in CPP_TEST_SOURCE_SETS.items():
+            if extension is build_helpers.CUDAExtension:
+                continue
+            with self.subTest(target=target):
+                self.assertIn("-DCPU_ONLY", define_flags)
+
     def test_blas_fallback_finds_linux_multiarch_library(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             prefix = Path(temp_dir)
@@ -172,7 +179,7 @@ class TestBuildConfig(unittest.TestCase):
             mock.patch("build_helpers.detect_blas_config", return_value=blas),
             mock.patch(
                 "build_helpers._common_compile_and_link_args",
-                return_value=([], [], [], [], []),
+                side_effect=lambda _: ([], [], [], [], []),
             ),
             mock.patch(
                 "build_helpers.resolve_cuda_build_enabled", return_value=True
@@ -183,10 +190,18 @@ class TestBuildConfig(unittest.TestCase):
                 ["cpu-extension"],
             )
             resolve_cuda.assert_not_called()
+            self.assertIn(
+                "-DCPU_ONLY",
+                cpu_extension.call_args.kwargs["extra_compile_args"]["cxx"],
+            )
 
             self.assertEqual(
                 build_cpp_test_extension("gpu-probe", debug=False),
                 ["gpu-extension"],
+            )
+            self.assertNotIn(
+                "-DCPU_ONLY",
+                gpu_extension.call_args.kwargs["extra_compile_args"]["cxx"],
             )
 
         self.assertEqual(resolve_cuda.call_count, 1)
