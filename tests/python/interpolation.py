@@ -152,6 +152,8 @@ class TestInterpolation(unittest.TestCase):
         torch.sum(y).backward()
 
         # samples with all zeros, shape is inconsistent and backward gives error
+        # Rebuild the input so this case has an independent autograd graph.
+        x = SparseTensor(feat.detach().clone().requires_grad_(), pc, device="cuda")
         samples = torch.zeros_like(pc)
         samples[:, 0] = 0
         y = interp(x, samples)
