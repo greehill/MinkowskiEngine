@@ -120,12 +120,12 @@ class TestBuildConfig(unittest.TestCase):
 
             with (
                 mock.patch.dict(
-                    "os.environ", {"MINKOWSKI_BLAS": "mkl"}, clear=True
+                    "os.environ",
+                    {"MINKOWSKI_BLAS": "mkl", "MKLROOT": str(prefix)},
+                    clear=True,
                 ),
                 mock.patch("build_helpers._run_pkg_config", return_value=None),
-                mock.patch(
-                    "build_helpers._candidate_prefixes", return_value=[prefix]
-                ),
+                mock.patch("build_helpers.COMMON_PREFIXES", ()),
             ):
                 config = detect_blas_config()
 
